@@ -9,8 +9,8 @@ const port = 8000
 //session
 app.use(
    session({
-      secret: "your-secret-key",
-      //세션을 서명하기 위한 키
+      secret: "haeju0930",
+      //세션을 서명하기 위한 키???
       resave: false,
       saveUninitialized: true,
    })
@@ -155,7 +155,7 @@ app.post("/account", (req, res) => {
 });
 
 // 아이디 찾기
-app.get("/account/:id", (req, res) => {
+app.get("/account/find-id", (req, res) => {
    try {
       const { name, phone_num, email } = req.query;
 
@@ -205,7 +205,7 @@ app.get("/account/:id", (req, res) => {
 });
 
 // 비밀번호 찾기
-app.put("/account/", (req, res) => {
+app.put("/account/find-pw", (req, res) => {
    try {
       const { id, name, phone_num, email } = req.query;
 
@@ -308,6 +308,17 @@ app.get("/account/my", (req, res) => {
 // 내 정보 수정
 app.put("/account/update", (req, res) => {
    try {
+      const user = req.session.user;
+
+      if (!user) {
+         // 사용자가 로그인되어 있지 않은 경우
+         const result = {
+            success: false,
+            message: "로그인이 필요합니다.",
+         };
+         return res.status(401).send(result);
+      }
+
       const { idx, id, name, phone_num, email } = req.body;
 
       //비밀번호 정규식
@@ -385,7 +396,19 @@ app.put("/account/update", (req, res) => {
 //회원 탈퇴
 app.delete("/account/:idx", async (req, res) => {
    try {
+      const user = req.session.user;
+
+      if (!user) {
+         // 사용자가 로그인되어 있지 않은 경우
+         const result = {
+            success: false,
+            message: "로그인이 필요합니다.",
+         };
+         return res.status(401).send(result);
+      }
+
       const userIdx = req.params.idx; // 동적으로 전달된 idx
+      const idx = user.idx//아니면 이런식으로..?
 
       // DB 통신
       const deleteResult = "";
@@ -420,6 +443,17 @@ app.delete("/account/:idx", async (req, res) => {
 // 게시글 쓰기
 app.post("/posts", (req, res) => {
    try {
+      const user = req.session.user;
+
+      if (!user) {
+         // 사용자가 로그인되어 있지 않은 경우
+         const result = {
+            success: false,
+            message: "로그인이 필요합니다.",
+         };
+         return res.status(401).send(result);
+      }
+
       const { title, content } = req.body;
 
       // 제목이 비어있는지 확인
@@ -467,66 +501,153 @@ app.post("/posts", (req, res) => {
    }
 });
 
-//게시글 목록 보기
+//게시글 보기
 app.get("/posts", (req, res) => {
    try {
-      // 데이터베이스에서 모든 게시글을 가져오는 로직
+      const user = req.session.user;
 
+      if (!user) {
+         // 사용자가 로그인되어 있지 않은 경우
+         const result = {
+            success: false,
+            message: "로그인이 필요합니다.",
+         };
+         return res.status(401).send(result);
+      }
+
+      // 데이터베이스에서 모든 게시글을 가져오는 로직
       const posts = [
-         { id: 1, title: "첫 번째 게시글" },
-         { id: 2, title: "두 번째 게시글" },
+         { idx: 1, title: "첫 번째 게시글", time: "2023-12-05 11:45:50" },
+         { idx: 2, title: "두 번째 게시글", time: "2023-12-05 11:45:50" },
          // ... 더 많은 게시글
       ];
 
-      res.send(posts);
+      // 성공 상태 코드와 함께 게시글 목록 반환
+      const result = {
+         success: true,
+         posts,
+      };
+      res.status(200).send(result);
    } catch (error) {
       console.error("게시글 목록 조회 중 에러 발생:", error);
       const result = {
          success: false,
          message: "게시글 목록 조회 중 에러가 발생하였습니다.",
       };
+      // 에러 상태 코드와 함께 에러 메시지 반환
       return res.status(500).send(result);
    }
 });
 
 //게시글 자세히 보기
 app.get("/posts/:idx", (req, res) => {
-   const postId = req.params.id;
+   try {
+      const user = req.session.user;
 
-   // 데이터베이스에서 특정 ID의 게시글을 가져오는 로직
+      if (!user) {
+         // 사용자가 로그인되어 있지 않은 경우
+         const result = {
+            success: false,
+            message: "로그인이 필요합니다.",
+         };
+         return res.status(401).send(result);
+      }
 
-   const post = { id: postId, title: "게시글 제목", content: "게시글 내용" };
+      const postIdx = req.params.idx;
+      // 데이터베이스에서게시글 을 가져오는 로직
 
-   res.send(post);
+      // 성공 상태 코드와 함께 게시글 목록 반환
+      const result = {
+         success: true,
+         posts,
+      };
+      res.status(200).send(result);
+   } catch (error) {
+      console.error("게시글 조회 중 에러 발생:", error);
+      const result = {
+         success: false,
+         message: "게시글 조회 중 에러가 발생하였습니다.",
+      };
+      // 에러 상태 코드와 함께 에러 메시지 반환
+      return res.status(500).send(result);
+   }
 });
 
 //게시글 수정하기
 app.put("/posts/:idx", (req, res) => {
-   const postId = req.params.id;
-   const { title, content } = req.body;
+   try {
+      const user = req.session.user;
 
-   // 데이터베이스에서 특정 ID의 게시글을 수정하는 로직
+      if (!user) {
+         // 사용자가 로그인되어 있지 않은 경우
+         const result = {
+            success: false,
+            message: "로그인이 필요합니다.",
+         };
+         return res.status(401).send(result);
+      }
 
-   const result = {
-      success: true,
-      message: "게시글이 성공적으로 수정되었습니다.",
-   };
+      const postIdx = req.params.idx; // 파라미터 이름 수정
+      const { title, content } = req.body;
 
-   res.send(result);
+      // 여기에 데이터베이스에서 특정 ID의 게시글을 수정하는 로직을 구현
+
+      // 수정이 성공했다고 가정하고 결과를 설정
+      const result = {
+         success: true,
+         message: "게시글이 성공적으로 수정되었습니다.",
+      };
+
+      // 성공 상태 코드와 함께 결과 반환
+      res.status(200).send(result);
+   } catch (error) {
+      console.error("게시글 수정 중 에러 발생:", error);
+
+      // 에러 상태 코드와 함께 에러 메시지 반환
+      const result = {
+         success: false,
+         message: "게시글 수정 중 에러가 발생하였습니다.",
+      };
+      res.status(500).send(result);
+   }
 });
 
 //게시글 삭제하기
 app.delete("/posts/:idx", (req, res) => {
-   const postId = req.params.id;
+   try {
+      const user = req.session.user;
 
-   // 데이터베이스에서 특정 ID의 게시글을 삭제하는 로직
+      if (!user) {
+         // 사용자가 로그인되어 있지 않은 경우
+         const result = {
+            success: false,
+            message: "로그인이 필요합니다.",
+         };
+         return res.status(401).send(result);
+      }
 
-   const result = {
-      success: true,
-      message: "게시글이 성공적으로 삭제되었습니다.",
-   };
+      const postIdx = req.params.idx;
 
-   res.send(result);
+      // 여기에 데이터베이스에서 Idx의 게시글을 삭제하는 로직을 구현
+
+      // 삭제가 성공했다고 가정하고 결과를 설정
+      const result = {
+         success: true,
+         message: "게시글이 성공적으로 삭제되었습니다.",
+      };
+
+      // 성공 상태 코드와 함께 결과 반환
+      res.status(200).send(result);
+   } catch (error) {
+      console.error("게시글 삭제 중 에러 발생:", error);
+
+      // 에러 상태 코드와 함께 에러 메시지 반환
+      const result = {
+         success: false,
+         message: "게시글 삭제 중 에러가 발생하였습니다.",
+      };
+      res.status(500).send(result);
+   }
 });
 
 
