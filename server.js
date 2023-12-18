@@ -1,6 +1,7 @@
 //js에서 다른 js import
 const express = require("express");
 const session = require("express-session");
+//쿠키를 만들어줌
 
 //Init
 const app = express()
@@ -13,6 +14,7 @@ app.use(
       //세션을 서명하기 위한 키???
       resave: false,
       saveUninitialized: true,
+      //쿠키 추가해줘봐
    })
 );
 
@@ -30,37 +32,34 @@ const nameLengthRegex = /^.{3,20}$/;//이름 길이 제한
 app.post("/login", (req, res) => {
    try {
       const { id, pw } = req.body;
-
+      const result = {
+         //success: false,
+         //상태 코드 있으면 success 필요 없음.
+         //상태코드 200,400(프론트 api 못 맞춰줬을때),401(인증 오류),500(뱍엔드)
+         message: '',
+         // data: {
+         //    isDuplicated: false
+         // }
+      };
       // 아이디 정규식
       if (!idPattern.test(id)) {
-         const result = {
-            success: false,
-            message: '아이디 형식이 올바르지 않습니다.',
-         };
+         result.message = '아이디 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 비밀번호 정규식
       if (!pwPattern.test(pw)) {
-         const result = {
-            success: false,
-            message: '비밀번호 형식이 올바르지 않습니다.',
-         };
+         result.message = '비밀번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 로그인 처리
-      const result = {
-         success: true,
-         message: '로그인이 성공적으로 완료되었습니다.',
-      };
+      result.message = '로그인이 성공적으로 완료되었습니다.';
       res.status(200).send(result);
+
    } catch (error) {
       console.error("로그인 중 에러 발생:", error);
-      const result = {
-         success: false,
-         message: "로그인 중 에러가 발생하였습니다.",
-      };
+      result.message = "로그인 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
 });
@@ -69,49 +68,42 @@ app.post("/login", (req, res) => {
 app.post("/account", (req, res) => {
    try {
       const { id, pw, name, phone_num, email } = req.body;
+      const result = {
+         message: '',
+      };
 
       // 아이디 정규식
       if (!idPattern.test(id)) {
-         const result = {
-            success: false,
-            message: '아이디 형식이 올바르지 않습니다.',
-         };
+
+         result.message = '아이디 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 비밀번호 정규식
       if (!pwPattern.test(pw)) {
-         const result = {
-            success: false,
-            message: '비밀번호 형식이 올바르지 않습니다.',
-         };
+
+         result.message = '비밀번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 전화번호 정규식
       if (!phonePattern.test(phone_num)) {
-         const result = {
-            success: false,
-            message: '전화번호 형식이 올바르지 않습니다.',
-         };
+
+         result.message = '전화번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 이메일 정규식
       if (!emailPattern.test(email)) {
-         const result = {
-            success: false,
-            message: '이메일 형식이 올바르지 않습니다.',
-         };
+
+         result.message = '이메일 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 이름 정규식 
       if (!nameLengthRegex.test(name)) {
-         const result = {
-            success: false,
-            message: '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.',
-         };
+
+         result.message = '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.';
          return res.status(400).send(result);
       }
 
@@ -121,35 +113,25 @@ app.post("/account", (req, res) => {
 
       // 아이디 중복 확인
       if (existingUser) {
-         const result = {
-            success: false,
-            message: '아이디가 이미 존재합니다.',
-         };
+         result.message = '아이디가 이미 존재합니다.';
          return res.status(409).send(result);
       }
 
       // 전화번호 중복 확인
       if (existingPhoneNum) {
-         const result = {
-            success: false,
-            message: '전화번호가 이미 존재합니다.',
-         };
+         result.message = '전화번호가 이미 존재합니다.';
          return res.status(409).send(result);
       }
 
       // db에 집어넣는 과정
 
-      const result = {
-         success: true,
-         message: '회원가입이 성공적으로 완료되었습니다.',
-      };
+      result.message = '회원가입이 성공적으로 완료되었습니다.';
       res.status(201).send(result);
+
    } catch (error) {
       console.error("회원가입 중 에러 발생:", error);
-      const result = {
-         success: false,
-         message: "회원가입 중 에러가 발생하였습니다.",
-      };
+
+      result.message = "회원가입 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
 });
@@ -158,117 +140,94 @@ app.post("/account", (req, res) => {
 app.get("/account/find-id", (req, res) => {
    try {
       const { name, phone_num, email } = req.query;
+      const result = {
+         message: '',
+      };
 
       // 전화번호 정규식
       if (!phonePattern.test(phone_num)) {
-         const result = {
-            success: false,
-            message: '전화번호 형식이 올바르지 않습니다.',
-         };
+         result.message = '전화번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 이메일 정규식
       if (!emailPattern.test(email)) {
-         const result = {
-            success: false,
-            message: '이메일 형식이 올바르지 않습니다.',
-         };
+         result.message = '이메일 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 이름 정규식 
       if (!nameLengthRegex.test(name)) {
-         const result = {
-            success: false,
-            message: '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.',
-         };
+         result.message = '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.';
          return res.status(400).send(result);
       }
 
-      // db처리로 id 가져오기
+      // db 처리로 id 가져오기
 
       // 로그인 처리
-      const result = {
-         success: true,
-         message: '받아온 id 출력',
-      };
+      result.success = true;
+      result.message = '받아온 id 출력';
       res.status(200).send(result);
    } catch (error) {
       console.error("아이디 찾기 중 에러 발생:", error);
-      const result = {
-         success: false,
-         message: "아이디 찾기 중 에러가 발생하였습니다.",
-      };
+      result.success = false;
+      result.message = "아이디 찾기 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
 });
 
 // 비밀번호 찾기
-app.put("/account/find-pw", (req, res) => {
+app.get("/account/find-pw", (req, res) => {
    try {
       const { id, name, phone_num, email } = req.query;
+      const result = {
+         message: '',
+      };
 
       // 아이디 정규식
       if (!idPattern.test(id)) {
-         const result = {
-            success: false,
-            message: '아이디 형식이 올바르지 않습니다.',
-         };
+         result.message = '아이디 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 전화번호 정규식
       if (!phonePattern.test(phone_num)) {
-         const result = {
-            success: false,
-            message: '전화번호 형식이 올바르지 않습니다.',
-         };
+         result.message = '전화번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 이메일 정규식
       if (!emailPattern.test(email)) {
-         const result = {
-            success: false,
-            message: '이메일 형식이 올바르지 않습니다.',
-         };
+         result.message = '이메일 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 이름 정규식 
       if (!nameLengthRegex.test(name)) {
-         const result = {
-            success: false,
-            message: '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.',
-         };
+         result.message = '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.';
          return res.status(400).send(result);
       }
 
       // db로 비밀번호 가져오기
 
       // 로그인 처리
-      const result = {
-         success: true,
-         message: '받아온 비밀번호 출력',
-      };
+      result.success = true;
+      result.message = '받아온 비밀번호 출력';
       res.status(200).send(result);
    } catch (error) {
       console.error("비밀번호 찾기 중 에러 발생:", error);
-      const result = {
-         success: false,
-         message: "비밀번호 찾기 중 에러가 발생하였습니다.",
-      };
+      result.message = "비밀번호 찾기 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
 });
 
 
+//rest에서 get이랑 delete는 body를 못 보내서, querySting이랑 passparameter 있음.
 
 //============내 정보================
 
 // 내 정보 보기
-app.get("/account/my", (req, res) => {
+app.get("/account", (req, res) => {
    try {
       const user = req.session.user;
 
@@ -306,9 +265,12 @@ app.get("/account/my", (req, res) => {
 });
 
 // 내 정보 수정
-app.put("/account/update", (req, res) => {
+app.put("/account", (req, res) => {
    try {
       const user = req.session.user;
+      const result = {
+         message: '',
+      };
 
       if (!user) {
          // 사용자가 로그인되어 있지 않은 경우
@@ -321,48 +283,33 @@ app.put("/account/update", (req, res) => {
 
       const { idx, id, name, phone_num, email } = req.body;
 
-      //비밀번호 정규식
+      // 비밀번호 정규식
       if (!pwPattern.test(pw)) {
-         const result = {
-            success: false,
-            message: '비밀번호 형식이 올바르지 않습니다.',
-         };
+         result.message = '비밀번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
-      //전화번호 정규식
+      // 전화번호 정규식
       if (!phonePattern.test(phone_num)) {
-         const result = {
-            success: false,
-            message: '전화번호 형식이 올바르지 않습니다.',
-         };
+         result.message = '전화번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 이메일 정규식
       if (!emailPattern.test(email)) {
-         const result = {
-            success: false,
-            message: '이메일 형식이 올바르지 않습니다.',
-         };
+         result.message = '이메일 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
 
       // 이름 정규식 
       if (!nameLengthRegex.test(name)) {
-         const result = {
-            success: false,
-            message: '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.',
-         };
+         result.message = '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.';
          return res.status(400).send(result);
       }
 
       //전화번호 중복 확인
       if (existingPhoneNum) {
-         const result = {
-            success: false,
-            message: '전화번호가 이미 존재합니다.',
-         };
+         result.message = '전화번호가 이미 존재합니다.';
          return res.status(409).send(result); // 409 Conflict: 리소스의 현재 상태와 충돌이 발생했음을 나타냄
       }
 
@@ -371,39 +318,29 @@ app.put("/account/update", (req, res) => {
 
       // DB 통신 결과 처리
       if (updateResult.success) {
-         const result = {
-            success: true,
-            message: '회원 정보 수정이 성공적으로 완료되었습니다.',
-         };
+         result.message = '회원 정보 수정이 성공적으로 완료되었습니다.';
          return res.status(201).send(result);
       } else {
-         const result = {
-            success: false,
-            message: '회원 정보 수정에 실패하였습니다.',
-         };
+         result.message = '회원 정보 수정에 실패하였습니다.';
          return res.status(500).send(result);
       }
    } catch (error) {
       console.error("내 정보 수정 중 에러 발생:", error);
-      const result = {
-         success: false,
-         message: "내 정보 수정 중 에러가 발생하였습니다.",
-      };
+      result.message = "내 정보 수정 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
 });
 
 //회원 탈퇴
-app.delete("/account/:idx", async (req, res) => {
+app.delete("/account", async (req, res) => {
    try {
       const user = req.session.user;
+      const result = {
+         message: '',
+      };
 
       if (!user) {
-         // 사용자가 로그인되어 있지 않은 경우
-         const result = {
-            success: false,
-            message: "로그인이 필요합니다.",
-         };
+         result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
@@ -415,24 +352,15 @@ app.delete("/account/:idx", async (req, res) => {
 
       // DB 통신 결과 처리
       if (deleteResult.success) {
-         const result = {
-            success: true,
-            message: '회원 탈퇴가 성공적으로 완료되었습니다.',
-         };
+         result.message = '회원 탈퇴가 성공적으로 완료되었습니다.';
          return res.status(200).send(result);
       } else {
-         const result = {
-            success: false,
-            message: '회원 탈퇴에 실패하였습니다.',
-         };
+         result.message = '회원 탈퇴에 실패하였습니다.';
          return res.status(500).send(result);
       }
    } catch (error) {
       console.error("회원 탈퇴 중 에러 발생:", error);
-      const result = {
-         success: false,
-         message: "회원 탈퇴 중 에러가 발생하였습니다.",
-      };
+      result.message = "회원 탈퇴 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
 });
@@ -441,16 +369,16 @@ app.delete("/account/:idx", async (req, res) => {
 //=========게시글==========
 
 // 게시글 쓰기
-app.post("/posts", (req, res) => {
+app.post("/post", (req, res) => {
    try {
       const user = req.session.user;
+      const result = {
+         message: '',
+      };
 
       if (!user) {
          // 사용자가 로그인되어 있지 않은 경우
-         const result = {
-            success: false,
-            message: "로그인이 필요합니다.",
-         };
+         result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
@@ -458,19 +386,13 @@ app.post("/posts", (req, res) => {
 
       // 제목이 비어있는지 확인
       if (!title) {
-         const result = {
-            success: false,
-            message: "제목은 필수 입력 항목입니다.",
-         };
+         result.message = "제목은 필수 입력 항목입니다.";
          return res.status(400).send(result);
       }
 
       // 내용이 비어있는지 확인
       if (!content) {
-         const result = {
-            success: false,
-            message: "내용은 필수 입력 항목입니다.",
-         };
+         result.message = "내용은 필수 입력 항목입니다.";
          return res.status(400).send(result);
       }
 
@@ -479,39 +401,29 @@ app.post("/posts", (req, res) => {
 
       // 데이터베이스 저장 결과에 따른 처리
       if (saveResult.success) {
-         const result = {
-            success: true,
-            message: "게시글이 성공적으로 작성되었습니다.",
-         };
+         result.message = "게시글이 성공적으로 작성되었습니다.";
          return res.status(201).send(result);
       } else {
-         const result = {
-            success: false,
-            message: "게시글 작성에 실패하였습니다.",
-         };
+         result.message = "게시글 작성에 실패하였습니다.";
          return res.status(500).send(result);
       }
    } catch (error) {
       console.error("게시글 작성 중 에러 발생:", error);
-      const result = {
-         success: false,
-         message: "게시글 작성 중 에러가 발생하였습니다.",
-      };
+      result.message = "게시글 작성 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
 });
 
-//게시글 보기
-app.get("/posts", (req, res) => {
+//게시판 보기
+app.get("/post", (req, res) => {
    try {
       const user = req.session.user;
+      const result = {
+         message: '',
+      };
 
       if (!user) {
-         // 사용자가 로그인되어 있지 않은 경우
-         const result = {
-            success: false,
-            message: "로그인이 필요합니다.",
-         };
+         result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
@@ -523,67 +435,59 @@ app.get("/posts", (req, res) => {
       ];
 
       // 성공 상태 코드와 함께 게시글 목록 반환
-      const result = {
+      result = {
          success: true,
          posts,
       };
       res.status(200).send(result);
    } catch (error) {
       console.error("게시글 목록 조회 중 에러 발생:", error);
-      const result = {
-         success: false,
-         message: "게시글 목록 조회 중 에러가 발생하였습니다.",
-      };
-      // 에러 상태 코드와 함께 에러 메시지 반환
+      result.message = "게시글 목록 조회 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
 });
 
 //게시글 자세히 보기
-app.get("/posts/:idx", (req, res) => {
+app.get("/post/:idx", (req, res) => {
    try {
       const user = req.session.user;
+      const result = {
+         message: '',
+      };
 
       if (!user) {
          // 사용자가 로그인되어 있지 않은 경우
-         const result = {
-            success: false,
-            message: "로그인이 필요합니다.",
-         };
+         result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
       const postIdx = req.params.idx;
       // 데이터베이스에서게시글 을 가져오는 로직
 
-      // 성공 상태 코드와 함께 게시글 목록 반환
-      const result = {
+      // 성공 상태 코드와 함께 게시글 내용 반환
+      result = {
          success: true,
          posts,
       };
       res.status(200).send(result);
    } catch (error) {
       console.error("게시글 조회 중 에러 발생:", error);
-      const result = {
-         success: false,
-         message: "게시글 조회 중 에러가 발생하였습니다.",
-      };
-      // 에러 상태 코드와 함께 에러 메시지 반환
+      result.message = "게시글 조회 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
 });
 
 //게시글 수정하기
-app.put("/posts/:idx", (req, res) => {
+app.put("/post/:idx", (req, res) => {
    try {
       const user = req.session.user;
+      const result = {
+         message: '',
+      };
 
       if (!user) {
          // 사용자가 로그인되어 있지 않은 경우
-         const result = {
-            success: false,
-            message: "로그인이 필요합니다.",
-         };
+         result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
@@ -593,36 +497,25 @@ app.put("/posts/:idx", (req, res) => {
       // 여기에 데이터베이스에서 특정 ID의 게시글을 수정하는 로직을 구현
 
       // 수정이 성공했다고 가정하고 결과를 설정
-      const result = {
-         success: true,
-         message: "게시글이 성공적으로 수정되었습니다.",
-      };
-
-      // 성공 상태 코드와 함께 결과 반환
+      result.message = "게시글이 성공적으로 수정되었습니다.";
       res.status(200).send(result);
    } catch (error) {
       console.error("게시글 수정 중 에러 발생:", error);
-
-      // 에러 상태 코드와 함께 에러 메시지 반환
-      const result = {
-         success: false,
-         message: "게시글 수정 중 에러가 발생하였습니다.",
-      };
+      result.message = "게시글 수정 중 에러가 발생하였습니다.";
       res.status(500).send(result);
    }
 });
 
 //게시글 삭제하기
-app.delete("/posts/:idx", (req, res) => {
+app.delete("/post/:idx", (req, res) => {
    try {
       const user = req.session.user;
+      const result = {
+         message: '',
+      };
 
       if (!user) {
-         // 사용자가 로그인되어 있지 않은 경우
-         const result = {
-            success: false,
-            message: "로그인이 필요합니다.",
-         };
+         result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
@@ -631,21 +524,11 @@ app.delete("/posts/:idx", (req, res) => {
       // 여기에 데이터베이스에서 Idx의 게시글을 삭제하는 로직을 구현
 
       // 삭제가 성공했다고 가정하고 결과를 설정
-      const result = {
-         success: true,
-         message: "게시글이 성공적으로 삭제되었습니다.",
-      };
-
-      // 성공 상태 코드와 함께 결과 반환
+      result.message = "게시글이 성공적으로 삭제되었습니다.";
       res.status(200).send(result);
    } catch (error) {
       console.error("게시글 삭제 중 에러 발생:", error);
-
-      // 에러 상태 코드와 함께 에러 메시지 반환
-      const result = {
-         success: false,
-         message: "게시글 삭제 중 에러가 발생하였습니다.",
-      };
+      result.message = "게시글 삭제 중 에러가 발생하였습니다.";
       res.status(500).send(result);
    }
 });
@@ -654,16 +537,15 @@ app.delete("/posts/:idx", (req, res) => {
 //=========댓글=============
 
 //댓글 쓰기
-app.post("/posts/:postIdx/comments", async (req, res) => {
+app.post("/post/:postIdx/comment", async (req, res) => {
    try {
       const user = req.session.user;
+      const result = {
+         message: '',
+      };
 
       if (!user) {
-         // 사용자가 로그인되어 있지 않은 경우
-         const result = {
-            success: false,
-            message: "로그인이 필요합니다.",
-         };
+         result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
@@ -672,37 +554,27 @@ app.post("/posts/:postIdx/comments", async (req, res) => {
 
       // 유효성 검사: 댓글 내용이 비어 있는지 확인
       if (!content) {
-         const result = {
-            success: false,
-            message: "댓글 내용은 필수 입력 항목입니다.",
-         };
+         result.message = "댓글 내용은 필수 입력 항목입니다.";
          return res.status(400).send(result);
       }
 
       // 데이터베이스에 댓글을 저장하는 로직 쓰기
-
-      const result = {
-         success: true,
-         message: "댓글이 성공적으로 작성되었습니다.",
-      };
-
+      result.message = "댓글이 성공적으로 작성되었습니다.";
       res.status(201).send(result); // 201 Created: 새로운 자원이 성공적으로 생성됨
    } catch (error) {
       console.error("댓글 작성 중 에러 발생:", error);
-
-      const result = {
-         success: false,
-         message: "댓글 작성 중 에러가 발생하였습니다.",
-      };
-
+      result.message = "댓글 작성 중 에러가 발생하였습니다.";
       res.status(500).send(result); // 500 Internal Server Error: 서버 측에서 에러 발생
    }
 });
 
 //댓글 보기
-app.get("/posts/:postidx/comments", async (req, res) => {
+app.get("/post/:postidx/comment", async (req, res) => {
    try {
       const postIdx = req.params.postidx;
+      const result = {
+         message: '',
+      };
 
       // 데이터베이스에서 특정 게시글에 대한 모든 댓글을 가져오는 로직을 구현
 
@@ -712,49 +584,39 @@ app.get("/posts/:postidx/comments", async (req, res) => {
          // ... 더 많은 댓글
       ];
 
-      const result = {
-         success: true,
+      result = {
          message: "댓글을 성공적으로 가져왔습니다.",
          comments: comments,
       };
-
       res.status(200).send(result); // 200 OK: 성공적인 요청
 
    } catch (error) {
       console.error("댓글 조회 중 에러 발생:", error);
-
-      const result = {
-         success: false,
-         message: "댓글 조회 중 에러가 발생하였습니다.",
-      };
-
+      result.message = "댓글 조회 중 에러가 발생하였습니다.";
       res.status(500).send(result); // 500 Internal Server Error: 서버 측에서 에러 발생
    }
 });
 
 //댓글 수정
-app.put("/posts/:postidx/comments/:commentIdx", async (req, res) => {
+app.put("/post/:postidx/comment/:commentIdx", async (req, res) => {
    try {
       const user = req.session.user;
       const postIdx = req.params.postidx;
       const commentIdx = req.params.commentIdx;
       const { content } = req.body;
+      const result = {
+         message: '',
+      };
 
       if (!user) {
          // 사용자가 로그인되어 있지 않은 경우
-         const result = {
-            success: false,
-            message: "로그인이 필요합니다.",
-         };
+         result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
       // 유효성 검사: 댓글 내용이 비어 있는지 확인
       if (!content) {
-         const result = {
-            success: false,
-            message: "댓글 내용은 필수 입력 항목입니다.",
-         };
+         result.message = "댓글 내용은 필수 입력 항목입니다.";
          return res.status(400).send(result); // 400 Bad Request: 잘못된 요청
       }
 
@@ -763,55 +625,40 @@ app.put("/posts/:postidx/comments/:commentIdx", async (req, res) => {
 
       // 댓글 작성자의 idx와 세션의 idx가 다를 경우
       if (comment.userIdx !== user.idx) {
-         const result = {
-            success: false,
-            message: "권한이 없습니다.",
-         };
+         result.message = "권한이 없습니다.";
          return res.status(403).send(result); // 403 Forbidden: 권한이 없음
       }
 
       // 댓글이 존재하지 않을 경우
       if (!comment) {
-         const result = {
-            success: false,
-            message: "댓글을 찾을 수 없습니다.",
-         };
+         result.message = "댓글을 찾을 수 없습니다.";
          return res.status(404).send(result); // 404 Not Found: 댓글을 찾을 수 없음
       }
 
       // 데이터베이스에서 댓글을 수정하는 로직 구현하기
 
-      const result = {
-         success: true,
-         message: "댓글이 성공적으로 수정되었습니다.",
-      };
-
+      result.message = "댓글이 성공적으로 수정되었습니다.";
       res.status(200).send(result); // 200 OK: 성공적인 요청
    } catch (error) {
       console.error("댓글 수정 중 에러 발생:", error);
-
-      const result = {
-         success: false,
-         message: "댓글 수정 중 에러가 발생하였습니다.",
-      };
-
+      result.message = "댓글 수정 중 에러가 발생하였습니다.";
       res.status(500).send(result); // 500 Internal Server Error: 서버 측에서 에러 발생
    }
 });
 
 //댓글 삭제
-app.delete("/posts/:postidx/comments/:commentIdx", async (req, res) => {
+app.delete("/post/:postidx/comment/:commentIdx", async (req, res) => {
    try {
       const user = req.session.user;
       const postIdx = req.params.postidx;
       const commentIdx = req.params.commentIdx;
+      const result = {
+         message: '',
+      }
 
       if (!user) {
          // 사용자가 로그인되어 있지 않은 경우
-         const result = {
-            success: false,
-            message: "로그인이 필요합니다.",
-         };
+         result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
@@ -820,38 +667,24 @@ app.delete("/posts/:postidx/comments/:commentIdx", async (req, res) => {
 
       // 댓글이 존재하지 않을 경우
       if (!comment) {
-         const result = {
-            success: false,
-            message: "댓글을 찾을 수 없습니다.",
-         };
+         result.message = "댓글을 찾을 수 없습니다.";
          return res.status(404).send(result); // 404 Not Found: 댓글을 찾을 수 없음
       }
 
       // 댓글 작성자의 idx와 세션의 idx가 다를 경우
       if (comment.userIdx !== user.idx) {
-         const result = {
-            success: false,
-            message: "권한이 없습니다.",
-         };
+         result.message = "권한이 없습니다.";
          return res.status(403).send(result); // 403 Forbidden: 권한이 없음
       }
 
       // 데이터베이스에서 특정 댓글을 삭제하는 로직을 구현하기
 
-      const result = {
-         success: true,
-         message: "댓글이 성공적으로 삭제되었습니다.",
-      };
+      result.message = "댓글이 성공적으로 삭제되었습니다.";
 
       res.status(200).send(result); // 200 OK: 성공적인 요청
    } catch (error) {
       console.error("댓글 삭제 중 에러 발생:", error);
-
-      const result = {
-         success: false,
-         message: "댓글 삭제 중 에러가 발생하였습니다.",
-      };
-
+      result.message = "댓글 삭제 중 에러가 발생하였습니다.";
       res.status(500).send(result); // 500 Internal Server Error: 서버 측에서 에러 발생
    }
 });
