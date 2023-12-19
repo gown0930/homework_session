@@ -37,7 +37,7 @@ router.post("/login", (req, res) => {
       }
       // 로그인 처리
       const sql = "SELECT * FROM user WHERE id = ? AND password = ?";
-      connection.query(sql, [id, pw], (error, results, fields) => {
+      connection.query(sql, [id, pw], (error, results) => {
          if (error) {
             console.error("로그인 쿼리 중 에러 발생:", error);
             result.message = "로그인 중 에러가 발생하였습니다.";
@@ -48,7 +48,6 @@ router.post("/login", (req, res) => {
             return res.status(401).send(result);
          }
          // 로그인 성공
-         // 여기에서 세션 설정 등 로그인에 필요한 작업을 수행할 수 있습니다.
          result.message = "로그인 성공";
          res.status(200).send(result);
       });
@@ -109,7 +108,7 @@ router.post("/signup", (req, res) => {
 
       // 전화번호 중복 확인
       const checkPhoneSql = "SELECT * FROM user WHERE phone_num = ?";
-      connection.query(checkPhoneSql, [phone_num], (phoneError, phoneResults, phoneFields) => {
+      connection.query(checkPhoneSql, [phone_num], (phoneError, phoneResults) => {
          if (phoneError) {
             console.error("전화번호 중복 확인 쿼리 중 에러 발생:", phoneError);
             result.message = "회원가입 중 에러가 발생하였습니다.";
@@ -124,13 +123,12 @@ router.post("/signup", (req, res) => {
 
       // 회원가입 처리
       const insertUserSql = "INSERT INTO user (id, password, name, phone_num, email) VALUES (?, ?, ?, ?, ?)";
-      connection.query(insertUserSql, [id, pw, name, phone_num, email], (error, results, fields) => {
+      connection.query(insertUserSql, [id, pw, name, phone_num, email], (error, results) => {
          if (error) {
             console.error("회원가입 쿼리 중 에러 발생:", error);
             result.message = "회원가입 중 에러가 발생하였습니다.";
             return res.status(500).send(result);
          }
-
          result.message = "회원가입 성공";
          res.status(201).send(result);
       });
@@ -150,6 +148,10 @@ router.get("/find-id", (req, res) => {
       message: '',
    };
    try {
+      console.log("Received values:", { name, phone_num, email });
+      console.log(`phonePattern: ${phonePattern.test(phone_num)}`);
+      console.log(`emailPattern: ${emailPattern.test(email)}`);
+      console.log(`nameLengthRegex: ${nameLengthRegex.test(name)}`);
       // 전화번호 정규식
       if (!phonePattern.test(phone_num)) {
          result.message = '전화번호 형식이 올바르지 않습니다.';
@@ -167,9 +169,25 @@ router.get("/find-id", (req, res) => {
       }
 
       // db 처리로 id 가져오기
+      const findIdSql = "SELECT id FROM user WHERE name = ? AND phone_num = ? AND email = ?";
+      connection.query(findIdSql, [name, phone_num, email], (error, results) => {
+         if (error) {
+            console.error("아이디 찾기 쿼리 중 에러 발생:", error);
+            result.message = "아이디 찾기 중 에러가 발생하였습니다.";
+            return res.status(500).send(result);
+         }
 
-      // 로그인 처리
-      res.status(200).send(result);
+         if (!Array.isArray(results) || results.length === 0) {
+            result.message = '일치하는 사용자가 없습니다.';
+            return res.status(404).send(result);
+         }
+
+         // 결과에서 아이디 추출
+         const foundId = results[0].id;
+         result.message = '아이디 찾기 성공';
+         result.data = { foundId };
+         res.status(200).send(result);
+      });
    } catch (error) {
       console.error("아이디 찾기 중 에러 발생:", error);
       result.message = "아이디 찾기 중 에러가 발생하였습니다.";
@@ -177,7 +195,7 @@ router.get("/find-id", (req, res) => {
    }
 });
 
-// 비밀번호 찾기
+//비밀번호 찾기
 router.get("/find-pw", (req, res) => {
    const { id, name, phone_num, email } = req.query;
    const result = {
@@ -205,11 +223,27 @@ router.get("/find-pw", (req, res) => {
          return res.status(400).send(result);
       }
 
-      // db로 비밀번호 가져오기
+      // 비밀번호를 가져오기 위한 쿼리
+      const getPasswordSql = "SELECT password FROM user WHERE id = ? AND name = ? AND phone_num = ? AND email = ?";
+      connection.query(getPasswordSql, [id, name, phone_num, email], (error, results) => {
+         if (error) {
+            console.error("비밀번호 찾기 쿼리 중 에러 발생:", error);
+            result.message = "비밀번호 찾기 중 에러가 발생하였습니다.";
+            return res.status(500).send(result);
+         }
 
-      // 로그인 처리
-      result.message = '받아온 비밀번호 출력';
-      res.status(200).send(result);
+         if (results.length === 0) {
+            result.message = '일치하는 사용자가 없습니다.';
+            return res.status(404).send(result);
+         }
+
+         // 결과에서 비밀번호 추출
+         const foundPassword = results[0].password;
+
+         // 로그인 처리
+         result.message = '받아온 비밀번호 출력: ' + foundPassword;
+         res.status(200).send(result);
+      });
    } catch (error) {
       console.error("비밀번호 찾기 중 에러 발생:", error);
       result.message = "비밀번호 찾기 중 에러가 발생하였습니다.";
