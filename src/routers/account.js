@@ -49,11 +49,37 @@ router.post("/login", (req, res) => {
          }
          // 로그인 성공
          result.message = "로그인 성공";
+         // 세션에 사용자 정보 저장
+         req.session.user = {
+            idx: results[0].idx,
+            id: results[0].id,
+            name: results[0].name,
+            phone_num: results[0].phone_num,
+            email: results[0].email,
+         };
+         console.log("로그인 성공 - 사용자 정보:", req.session.user);
          res.status(200).send(result);
       });
    } catch (error) {
       console.error("로그인 중 에러 발생:", error);
       result.message = "로그인 중 에러가 발생하였습니다.";
+      return res.status(500).send(result);
+   }
+});
+
+// 로그아웃
+router.post("/logout", (req, res) => {
+   const result = {
+      message: '',
+   };
+   try {
+      // 세션에서 사용자 정보 삭제
+      delete req.session.user;
+      result.message = "로그아웃 성공";
+      res.status(200).send(result);
+   } catch (error) {
+      console.error("로그아웃 중 에러 발생:", error);
+      result.message = "로그아웃 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
 });
@@ -66,6 +92,26 @@ router.post("/signup", (req, res) => {
    };
 
    try {
+      if (id === null || id === "" || id === undefined) {
+         result.message = '아이디를 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (pw === null || pw === "" || pw === undefined) {
+         result.message = '비밀번호를 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (name === null || name === "" || name === undefined) {
+         result.message = '이름을 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (phone_num === null || phone_num === "" || phone_num === undefined) {
+         result.message = '핸드폰 번호를 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (email === null || email === "" || email === undefined) {
+         result.message = '이메일을 입력해주세요.';
+         return res.status(400).send(result)
+      }
       // 아이디 정규식
       if (!idPattern.test(id)) {
          result.message = '아이디 형식이 올바르지 않습니다.';
@@ -152,6 +198,19 @@ router.get("/find-id", (req, res) => {
       console.log(`phonePattern: ${phonePattern.test(phone_num)}`);
       console.log(`emailPattern: ${emailPattern.test(email)}`);
       console.log(`nameLengthRegex: ${nameLengthRegex.test(name)}`);
+
+      if (name === null || name === "" || name === undefined) {
+         result.message = '이름을 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (phone_num === null || phone_num === "" || phone_num === undefined) {
+         result.message = '핸드폰 번호를 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (email === null || email === "" || email === undefined) {
+         result.message = '이메일을 입력해주세요.';
+         return res.status(400).send(result)
+      }
       // 전화번호 정규식
       if (!phonePattern.test(phone_num)) {
          result.message = '전화번호 형식이 올바르지 않습니다.';
@@ -202,6 +261,22 @@ router.get("/find-pw", (req, res) => {
       message: '',
    };
    try {
+      if (id === null || id === "" || id === undefined) {
+         result.message = '아이디를 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (name === null || name === "" || name === undefined) {
+         result.message = '이름을 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (phone_num === null || phone_num === "" || phone_num === undefined) {
+         result.message = '핸드폰 번호를 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (email === null || email === "" || email === undefined) {
+         result.message = '이메일을 입력해주세요.';
+         return res.status(400).send(result)
+      }
       // 아이디 정규식
       if (!idPattern.test(id)) {
          result.message = '아이디 형식이 올바르지 않습니다.';
@@ -259,7 +334,7 @@ router.get("/find-pw", (req, res) => {
 // 내 정보 보기
 router.get("/", (req, res) => {
    const user = req.session.user;
-   const result = {
+   let result = {
       message: '',
    };
    try {
@@ -271,14 +346,13 @@ router.get("/", (req, res) => {
       // 사용자 정보를 가져와서 처리
       const { id, name, phone_num, email } = user;
 
-      result = {
-         data: {
-            id,
-            name,
-            phone_num,
-            email,
-         },
+      result.data = {
+         id,
+         name,
+         phone_num,
+         email,
       };
+
       res.status(200).send(result);
 
    } catch (error) {
@@ -288,19 +362,21 @@ router.get("/", (req, res) => {
    }
 });
 
+
 // 내 정보 수정
-router.put("/", (req, res) => {
+router.put("/", async (req, res) => {
    const user = req.session.user;
    const result = {
       message: '',
    };
+
    try {
       if (!user) {
          result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
-      const { idx, id, name, phone_num, email } = req.body;
+      const { idx, id, name, phone_num, email, pw } = req.body;
 
       // 비밀번호 정규식
       if (!pwPattern.test(pw)) {
@@ -323,28 +399,47 @@ router.put("/", (req, res) => {
          return res.status(400).send(result);
       }
 
-      //전화번호 중복 확인
-      if (existingPhoneNum) {
-         result.message = '전화번호가 이미 존재합니다.';
-         return res.status(409).send(result); // 409 Conflict: 리소스의 현재 상태와 충돌이 발생했음을 나타냄
-      }
+      // 전화번호 중복 확인
+      const checkPhoneSql = "SELECT * FROM user WHERE phone_num = ?";
+      connection.query(checkPhoneSql, [phone_num], (phoneError, phoneResults) => {
+         if (phoneError) {
+            console.error("전화번호 중복 확인 쿼리 중 에러 발생:", phoneError);
+            result.message = "회원가입 중 에러가 발생하였습니다.";
+            return res.status(500).send(result);
+         }
 
-      // db통신 결과
-      const updateResult = "";
+         if (phoneResults.length > 0) {
+            result.message = '전화번호가 이미 존재합니다.';
+            return res.status(409).send(result);
+         }
 
-      // DB 통신 결과 처리
-      if (updateResult.success) {
-         return res.status(201).send(result);
-      } else {
-         result.message = '회원 정보 수정에 실패하였습니다.';
-         return res.status(500).send(result);
-      }
+         // DB 통신
+         const updateSql = "UPDATE user SET password = ?, phone_num = ?, email = ?, name = ? WHERE idx = ?";
+
+         connection.query(updateSql, [pw, phone_num, email, name, idx], (updateError, updateResults) => {
+            if (updateError) {
+               console.error("내 정보 수정 중 에러 발생:", updateError);
+               result.message = "내 정보 수정 중 에러가 발생하였습니다.";
+               return res.status(500).send(result);
+            }
+
+            if (updateResults.affectedRows > 0) {
+               result.message = "회원 정보가 성공적으로 수정되었습니다.";
+               res.status(200).send(result);
+            } else {
+               result.message = "회원 정보 수정에 실패하였습니다.";
+               res.status(500).send(result);
+            }
+         });
+      });
    } catch (error) {
       console.error("내 정보 수정 중 에러 발생:", error);
       result.message = "내 정보 수정 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
 });
+
+
 
 //회원 탈퇴
 router.delete("/", async (req, res) => {
