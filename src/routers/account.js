@@ -17,6 +17,14 @@ router.post("/login", (req, res) => {
       message: '',
    };
    try {
+      if (id === null || id === "" || id === undefined) {
+         result.message = '아이디를 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (pw === null || pw === "" || pw === undefined) {
+         result.message = '비밀번호를 입력해주세요.';
+         return res.status(400).send(result)
+      }
       // 아이디 정규식
       if (!idPattern.test(id)) {
          result.message = '아이디 형식이 올바르지 않습니다.';
@@ -57,6 +65,7 @@ router.post("/signup", (req, res) => {
    const result = {
       message: '',
    };
+
    try {
       // 아이디 정규식
       if (!idPattern.test(id)) {
@@ -83,24 +92,48 @@ router.post("/signup", (req, res) => {
          result.message = '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.';
          return res.status(400).send(result);
       }
-
-      // 사용자 정보 db에서 가져왔다 치자.
-      const existingUser = "";
-      const existingPhoneNum = "";
-
       // 아이디 중복 확인
-      if (existingUser) {
-         result.message = '아이디가 이미 존재합니다.';
-         return res.status(409).send(result);
-      }
-      // 전화번호 중복 확인
-      if (existingPhoneNum) {
-         result.message = '전화번호가 이미 존재합니다.';
-         return res.status(409).send(result);
-      }
+      const checkIdSql = "SELECT * FROM user WHERE id = ?";
+      connection.query(checkIdSql, [id], (idError, idResults) => {
+         if (idError) {
+            console.error("아이디 중복 확인 쿼리 중 에러 발생:", idError);
+            result.message = "회원가입 중 에러가 발생하였습니다.";
+            return res.status(500).send(result);
+         }
 
-      // db에 집어넣는 과정
-      res.status(201).send(result);
+         if (idResults.length > 0) {
+            result.message = '아이디가 이미 존재합니다.';
+            return res.status(409).send(result);
+         }
+      });
+
+      // 전화번호 중복 확인
+      const checkPhoneSql = "SELECT * FROM user WHERE phone_num = ?";
+      connection.query(checkPhoneSql, [phone_num], (phoneError, phoneResults, phoneFields) => {
+         if (phoneError) {
+            console.error("전화번호 중복 확인 쿼리 중 에러 발생:", phoneError);
+            result.message = "회원가입 중 에러가 발생하였습니다.";
+            return res.status(500).send(result);
+         }
+
+         if (phoneResults.length > 0) {
+            result.message = '전화번호가 이미 존재합니다.';
+            return res.status(409).send(result);
+         }
+      });
+
+      // 회원가입 처리
+      const insertUserSql = "INSERT INTO user (id, password, name, phone_num, email) VALUES (?, ?, ?, ?, ?)";
+      connection.query(insertUserSql, [id, pw, name, phone_num, email], (error, results, fields) => {
+         if (error) {
+            console.error("회원가입 쿼리 중 에러 발생:", error);
+            result.message = "회원가입 중 에러가 발생하였습니다.";
+            return res.status(500).send(result);
+         }
+
+         result.message = "회원가입 성공";
+         res.status(201).send(result);
+      });
 
    } catch (error) {
       console.error("회원가입 중 에러 발생:", error);
@@ -108,6 +141,7 @@ router.post("/signup", (req, res) => {
       return res.status(500).send(result);
    }
 });
+
 
 // 아이디 찾기
 router.get("/find-id", (req, res) => {
