@@ -1,4 +1,6 @@
 const router = require("express").Router()
+const path = require("path")
+const connection = require(path.join(__dirname, "../../connection.js"));
 
 const idPattern = /^[a-zA-Z0-9_]{5,20}$/; // 5~20자의 영문 소문자, 대문자, 숫자, 언더스코어 허용
 const pwPattern = /^(?=.*\d)(?=.*[a-zA-Z])[0-9a-zA-Z!@#$%^&*_-]{8,}$/; // 8자 이상의 영문, 숫자, 특수문자 중 2가지 이상 조합 허용
@@ -10,17 +12,11 @@ const nameLengthRegex = /^.{3,20}$/;//이름 길이 제한
 
 // 로그인
 router.post("/login", (req, res) => {
+   const { id, pw } = req.body;
+   const result = {
+      message: '',
+   };
    try {
-      const { id, pw } = req.body;
-      const result = {
-         //success: false,
-         //상태 코드 있으면 success 필요 없음.
-         //상태코드 200,400(프론트 api 못 맞춰줬을때),401(인증 오류),500(뱍엔드)
-         message: '',
-         // data: {
-         //    isDuplicated: false
-         // }
-      };
       // 아이디 정규식
       if (!idPattern.test(id)) {
          result.message = '아이디 형식이 올바르지 않습니다.';
@@ -45,6 +41,7 @@ router.post("/login", (req, res) => {
          }
          // 로그인 성공
          // 여기에서 세션 설정 등 로그인에 필요한 작업을 수행할 수 있습니다.
+         result.message = "로그인 성공";
          res.status(200).send(result);
       });
    } catch (error) {
@@ -56,43 +53,33 @@ router.post("/login", (req, res) => {
 
 // 회원가입
 router.post("/signup", (req, res) => {
+   const { id, pw, name, phone_num, email } = req.body;
+   const result = {
+      message: '',
+   };
    try {
-      const { id, pw, name, phone_num, email } = req.body;
-      const result = {
-         message: '',
-      };
-
       // 아이디 정규식
       if (!idPattern.test(id)) {
-
          result.message = '아이디 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 비밀번호 정규식
       if (!pwPattern.test(pw)) {
-
          result.message = '비밀번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 전화번호 정규식
       if (!phonePattern.test(phone_num)) {
-
          result.message = '전화번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 이메일 정규식
       if (!emailPattern.test(email)) {
-
          result.message = '이메일 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 이름 정규식 
       if (!nameLengthRegex.test(name)) {
-
          result.message = '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.';
          return res.status(400).send(result);
       }
@@ -106,7 +93,6 @@ router.post("/signup", (req, res) => {
          result.message = '아이디가 이미 존재합니다.';
          return res.status(409).send(result);
       }
-
       // 전화번호 중복 확인
       if (existingPhoneNum) {
          result.message = '전화번호가 이미 존재합니다.';
@@ -118,7 +104,6 @@ router.post("/signup", (req, res) => {
 
    } catch (error) {
       console.error("회원가입 중 에러 발생:", error);
-
       result.message = "회원가입 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
@@ -126,24 +111,21 @@ router.post("/signup", (req, res) => {
 
 // 아이디 찾기
 router.get("/find-id", (req, res) => {
+   const { name, phone_num, email } = req.query;
+   const result = {
+      message: '',
+   };
    try {
-      const { name, phone_num, email } = req.query;
-      const result = {
-         message: '',
-      };
-
       // 전화번호 정규식
       if (!phonePattern.test(phone_num)) {
          result.message = '전화번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 이메일 정규식
       if (!emailPattern.test(email)) {
          result.message = '이메일 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 이름 정규식 
       if (!nameLengthRegex.test(name)) {
          result.message = '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.';
@@ -156,7 +138,6 @@ router.get("/find-id", (req, res) => {
       res.status(200).send(result);
    } catch (error) {
       console.error("아이디 찾기 중 에러 발생:", error);
-      result.success = false;
       result.message = "아이디 찾기 중 에러가 발생하였습니다.";
       return res.status(500).send(result);
    }
@@ -164,30 +145,26 @@ router.get("/find-id", (req, res) => {
 
 // 비밀번호 찾기
 router.get("/find-pw", (req, res) => {
+   const { id, name, phone_num, email } = req.query;
+   const result = {
+      message: '',
+   };
    try {
-      const { id, name, phone_num, email } = req.query;
-      const result = {
-         message: '',
-      };
-
       // 아이디 정규식
       if (!idPattern.test(id)) {
          result.message = '아이디 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 전화번호 정규식
       if (!phonePattern.test(phone_num)) {
          result.message = '전화번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 이메일 정규식
       if (!emailPattern.test(email)) {
          result.message = '이메일 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 이름 정규식 
       if (!nameLengthRegex.test(name)) {
          result.message = '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.';
@@ -197,7 +174,6 @@ router.get("/find-pw", (req, res) => {
       // db로 비밀번호 가져오기
 
       // 로그인 처리
-      result.success = true;
       result.message = '받아온 비밀번호 출력';
       res.status(200).send(result);
    } catch (error) {
@@ -214,18 +190,13 @@ router.get("/find-pw", (req, res) => {
 
 // 내 정보 보기
 router.get("/", (req, res) => {
+   const user = req.session.user;
+   const result = {
+      message: '',
+   };
    try {
-      const user = req.session.user;
-      const result = {
-         message: '',
-      };
-
       if (!user) {
-         // 사용자가 로그인되어 있지 않은 경우
-         const result = {
-            success: false,
-            message: "로그인이 필요합니다.",
-         };
+         result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
@@ -251,12 +222,11 @@ router.get("/", (req, res) => {
 
 // 내 정보 수정
 router.put("/", (req, res) => {
+   const user = req.session.user;
+   const result = {
+      message: '',
+   };
    try {
-      const user = req.session.user;
-      const result = {
-         message: '',
-      };
-
       if (!user) {
          result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
@@ -269,19 +239,16 @@ router.put("/", (req, res) => {
          result.message = '비밀번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 전화번호 정규식
       if (!phonePattern.test(phone_num)) {
          result.message = '전화번호 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 이메일 정규식
       if (!emailPattern.test(email)) {
          result.message = '이메일 형식이 올바르지 않습니다.';
          return res.status(400).send(result);
       }
-
       // 이름 정규식 
       if (!nameLengthRegex.test(name)) {
          result.message = '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.';

@@ -6,12 +6,11 @@ const router = require("express").Router()
 
 //댓글 쓰기
 router.post("/", async (req, res) => {
+   const user = req.session.user;
+   const result = {
+      message: '',
+   };
    try {
-      const user = req.session.user;
-      const result = {
-         message: '',
-      };
-
       if (!user) {
          result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
@@ -37,12 +36,11 @@ router.post("/", async (req, res) => {
 
 //댓글 보기
 router.get("/", async (req, res) => {
+   const postIdx = req.params.postidx;
+   const result = {
+      message: '',
+   }
    try {
-      const postIdx = req.params.postidx;
-      const result = {
-         message: '',
-      };
-
       // 데이터베이스에서 특정 게시글에 대한 모든 댓글을 가져오는 로직을 구현
 
       const comments = [
@@ -50,7 +48,6 @@ router.get("/", async (req, res) => {
          // { idx: 2, content: "두 번째 댓글" user_idx: 2 },
          // ... 더 많은 댓글
       ];
-
       result = {
          comments: comments,
       };
@@ -65,21 +62,18 @@ router.get("/", async (req, res) => {
 
 //댓글 수정
 router.put("/:commentIdx", async (req, res) => {
+   const user = req.session.user;
+   const postIdx = req.params.postidx;
+   const commentIdx = req.params.commentIdx;
+   const { content } = req.body;
+   const result = {
+      message: '',
+   };
    try {
-      const user = req.session.user;
-      const postIdx = req.params.postidx;
-      const commentIdx = req.params.commentIdx;
-      const { content } = req.body;
-      const result = {
-         message: '',
-      };
-
       if (!user) {
-         // 사용자가 로그인되어 있지 않은 경우
          result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
-
       // 유효성 검사: 댓글 내용이 비어 있는지 확인
       if (!content) {
          result.message = "댓글 내용은 필수 입력 항목입니다.";
@@ -94,7 +88,6 @@ router.put("/:commentIdx", async (req, res) => {
          result.message = "권한이 없습니다.";
          return res.status(403).send(result); // 403 Forbidden: 권한이 없음
       }
-
       // 댓글이 존재하지 않을 경우
       if (!comment) {
          result.message = "댓글을 찾을 수 없습니다.";
@@ -112,16 +105,14 @@ router.put("/:commentIdx", async (req, res) => {
 
 //댓글 삭제
 router.delete("/:commentIdx", async (req, res) => {
+   const user = req.session.user;
+   const postIdx = req.params.postidx;
+   const commentIdx = req.params.commentIdx;
+   const result = {
+      message: '',
+   }
    try {
-      const user = req.session.user;
-      const postIdx = req.params.postidx;
-      const commentIdx = req.params.commentIdx;
-      const result = {
-         message: '',
-      }
-
       if (!user) {
-         // 사용자가 로그인되어 있지 않은 경우
          result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
@@ -140,7 +131,6 @@ router.delete("/:commentIdx", async (req, res) => {
          result.message = "권한이 없습니다.";
          return res.status(403).send(result); // 403 Forbidden: 권한이 없음
       }
-
       // 데이터베이스에서 특정 댓글을 삭제하는 로직을 구현하기
       res.status(200).send(result); // 200 OK: 성공적인 요청
    } catch (error) {

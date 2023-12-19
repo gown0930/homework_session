@@ -1,6 +1,9 @@
 const express = require("express");
 const session = require("express-session");
 const mysql = require("mysql2");
+const path = require("path")
+//db 연결하는 connection.js 가져오기
+const connection = require(path.join(__dirname, "connection.js"));
 
 const app = express();
 const port = 8000;
@@ -15,21 +18,6 @@ app.use(
 
 app.use(express.json());
 
-const connection = mysql.createConnection({
-   host: 'localhost',
-   user: 'haeju',
-   password: '0930',
-   database: 'week6',
-});
-
-// MariaDB 연결
-connection.connect((err) => {
-   if (err) {
-      console.error('Error connecting to MariaDB:', err);
-      return;
-   }
-   console.log('Connected to MariaDB');
-});
 
 // APIs
 const accountApi = require("./src/routers/account");

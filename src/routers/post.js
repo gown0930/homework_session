@@ -4,12 +4,11 @@ const router = require("express").Router()
 
 // 게시글 쓰기
 router.post("/", (req, res) => {
+   const user = req.session.user;
+   const result = {
+      message: '',
+   };
    try {
-      const user = req.session.user;
-      const result = {
-         message: '',
-      };
-
       if (!user) {
          // 사용자가 로그인되어 있지 않은 경우
          result.message = "로그인이 필요합니다.";
@@ -49,12 +48,11 @@ router.post("/", (req, res) => {
 
 //게시판 보기
 router.get("/", (req, res) => {
+   const user = req.session.user;
+   const result = {
+      message: '',
+   };
    try {
-      const user = req.session.user;
-      const result = {
-         message: '',
-      };
-
       if (!user) {
          result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
@@ -81,12 +79,11 @@ router.get("/", (req, res) => {
 
 //게시글 자세히 보기
 router.get("/:idx", (req, res) => {
+   const user = req.session.user;
+   const result = {
+      message: '',
+   };
    try {
-      const user = req.session.user;
-      const result = {
-         message: '',
-      };
-
       if (!user) {
          // 사용자가 로그인되어 있지 않은 경우
          result.message = "로그인이 필요합니다.";
@@ -110,12 +107,11 @@ router.get("/:idx", (req, res) => {
 
 //게시글 수정하기
 router.put("/:idx", (req, res) => {
+   const user = req.session.user;
+   const result = {
+      message: '',
+   };
    try {
-      const user = req.session.user;
-      const result = {
-         message: '',
-      };
-
       if (!user) {
          // 사용자가 로그인되어 있지 않은 경우
          result.message = "로그인이 필요합니다.";
@@ -138,12 +134,11 @@ router.put("/:idx", (req, res) => {
 
 //게시글 삭제하기
 router.delete("/:idx", (req, res) => {
+   const user = req.session.user;
+   const result = {
+      message: '',
+   };
    try {
-      const user = req.session.user;
-      const result = {
-         message: '',
-      };
-
       if (!user) {
          result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
