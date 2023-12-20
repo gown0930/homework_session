@@ -487,10 +487,10 @@ router.delete("/", async (req, res) => {
          }
          // DB 통신 결과 처리
          if (deleteResult.affectedRows > 0) {
-            result.message = "회원이 성공적으로 삭제되었습니다.";
+            result.message = "회원 정보가 성공적으로 삭제되었습니다.";
             return res.status(200).send(result);
          } else {
-            result.message = '회원 삭제에 실패하였습니다. 유효한 사용자 인덱스인지 확인해주세요.';
+            result.message = '회원 정보 삭제에 실패하였습니다. 유효한 사용자 인덱스인지 확인해주세요.';
             return res.status(500).send(result);
          }
       });
