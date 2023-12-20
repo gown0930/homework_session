@@ -83,9 +83,10 @@ router.get("/", (req, res) => {
 
          // 성공 상태 코드와 함께 게시글 목록 반환
          result.posts = posts.map(post => ({
-            title: post.title,
-            created_at: post.created_at.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) // 한국 시간대로 변환
+            title: post?.title,
+            created_at: post?.created_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) // 한국 시간대로 변환
          }));
+
 
          res.status(200).send(result);
       });
@@ -121,10 +122,11 @@ router.get("/:idx", (req, res) => {
 
          // 성공 상태 코드와 함께 게시글 내용 반환
          result.posts = posts.map(post => ({
-            title: post.title,
-            content: post.content,
-            created_at: post.created_at.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) // 한국 시간대로 변환
+            title: post?.title,
+            content: post?.content,
+            created_at: post?.created_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) // 한국 시간대로 변환
          }));
+
 
          res.status(200).send(result);
       });

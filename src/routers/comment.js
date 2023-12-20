@@ -71,8 +71,8 @@ router.get("/", async (req, res) => {
          }
          // 성공 상태 코드와 함께 댓글 목록 반환
          result.comments = comments.map(comment => ({
-            content: comment.comment,
-            created_at: comment.created_at.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) // 한국 시간대로 변환
+            content: comment?.comment,
+            created_at: comment?.created_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) // 한국 시간대로 변환
          }));
          res.status(200).send(result); // 200 OK: 성공적인 요청
       });
