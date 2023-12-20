@@ -187,10 +187,8 @@ router.delete("/:idx", (req, res) => {
          result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
-
       const postIdx = req.params.idx;
 
-      // 데이터베이스에서 Idx의 게시글을 삭제하는 로직을 구현
       const deletePostQuery = "DELETE FROM post WHERE idx = ? AND user_idx = ?";
 
       connection.query(deletePostQuery, [postIdx, user.idx], (queryError, deleteResults) => {
@@ -199,7 +197,6 @@ router.delete("/:idx", (req, res) => {
             result.message = "게시글 삭제 중 에러가 발생하였습니다.";
             return res.status(500).send(result);
          }
-
          if (deleteResults.affectedRows > 0) {
             // 삭제가 성공한 경우
             result.message = "게시글이 성공적으로 삭제되었습니다.";
@@ -216,6 +213,5 @@ router.delete("/:idx", (req, res) => {
       res.status(500).send(result);
    }
 });
-
 
 module.exports = router
