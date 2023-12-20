@@ -375,8 +375,25 @@ router.put("/", async (req, res) => {
          result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
+      const { idx, id, oldName, oldPhone_num, oldEmail, odlPw } = user;
+      const { name, phone_num, email, pw } = req.body;
 
-      const { idx, id, name, phone_num, email, pw } = req.body;
+      if (pw === null || pw === "" || pw === undefined) {
+         result.message = '비밀번호를 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (name === null || name === "" || name === undefined) {
+         result.message = '이름을 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (phone_num === null || phone_num === "" || phone_num === undefined) {
+         result.message = '핸드폰 번호를 입력해주세요.';
+         return res.status(400).send(result)
+      }
+      if (email === null || email === "" || email === undefined) {
+         result.message = '이메일을 입력해주세요.';
+         return res.status(400).send(result)
+      }
 
       // 비밀번호 정규식
       if (!pwPattern.test(pw)) {
@@ -418,7 +435,9 @@ router.put("/", async (req, res) => {
 
          connection.query(updateSql, [pw, phone_num, email, name, idx], (updateError, updateResults) => {
             if (updateError) {
-               console.error("내 정보 수정 중 에러 발생:", updateError);
+               console.error("내 정보 수정 중 에러 발생:", updateError.message);
+               console.error("SQL 문장:", updateSql);
+               console.error("바인딩 값:", [pw, phone_num, email, name, idx]);
                result.message = "내 정보 수정 중 에러가 발생하였습니다.";
                return res.status(500).send(result);
             }
@@ -427,6 +446,7 @@ router.put("/", async (req, res) => {
                result.message = "회원 정보가 성공적으로 수정되었습니다.";
                res.status(200).send(result);
             } else {
+               console.error("영향 받은 행이 없음");
                result.message = "회원 정보 수정에 실패하였습니다.";
                res.status(500).send(result);
             }
@@ -443,30 +463,38 @@ router.put("/", async (req, res) => {
 
 //회원 탈퇴
 router.delete("/", async (req, res) => {
+   const user = req.session.user;
+   const result = {
+      message: '',
+   };
    try {
-      const user = req.session.user;
-      const result = {
-         message: '',
-      };
-
       if (!user) {
          result.message = "로그인이 필요합니다.";
          return res.status(401).send(result);
       }
 
-      const userIdx = req.params.idx; // 동적으로 전달된 idx
-      const idx = user.idx//아니면 이런식으로..?
+      // const userIdx = req.params.idx; // 동적으로 전달된 idx
+      const idx = user.idx;//아니면 이런식으로..?
 
       // DB 통신
-      const deleteResult = "";
+      const deleteSql = "DELETE FROM user WHERE idx = ?";
+      // DB 통신
+      connection.query(deleteSql, [idx], (deleteError, deleteResult) => {
+         if (deleteError) {
+            console.error("회원 삭제 중 에러 발생:", deleteError);
+            result.message = "회원 삭제 중 에러가 발생하였습니다.";
+            return res.status(500).send(result);
+         }
+         // DB 통신 결과 처리
+         if (deleteResult.affectedRows > 0) {
+            result.message = "회원이 성공적으로 삭제되었습니다.";
+            return res.status(200).send(result);
+         } else {
+            result.message = '회원 삭제에 실패하였습니다. 유효한 사용자 인덱스인지 확인해주세요.';
+            return res.status(500).send(result);
+         }
+      });
 
-      // DB 통신 결과 처리
-      if (deleteResult.success) {
-         return res.status(200).send(result);
-      } else {
-         result.message = '회원 탈퇴에 실패하였습니다.';
-         return res.status(500).send(result);
-      }
    } catch (error) {
       console.error("회원 탈퇴 중 에러 발생:", error);
       result.message = "회원 탈퇴 중 에러가 발생하였습니다.";
