@@ -21,13 +21,13 @@ router.post("/", (req, res) => {
       const user_idx = user.idx; // 사용자 인덱스
 
       // 제목이 비어있는지 확인
-      if (!title) {
+      if (title === null || title === "" || title === undefined) {
          result.message = "제목은 필수 입력 항목입니다.";
          return res.status(400).send(result);
       }
 
       // 내용이 비어있는지 확인
-      if (!content) {
+      if (content === null || content === "" || content === undefined) {
          result.message = "내용은 필수 입력 항목입니다.";
          return res.status(400).send(result);
       }
@@ -150,6 +150,18 @@ router.put("/:idx", (req, res) => {
       const postIdx = req.params.idx;
       const { title, content } = req.body;
       const user_idx = user.idx;
+
+      // 제목이 비어있는지 확인
+      if (title === null || title === "" || title === undefined) {
+         result.message = "제목은 필수 입력 항목입니다.";
+         return res.status(400).send(result);
+      }
+
+      // 내용이 비어있는지 확인
+      if (content === null || content === "" || content === undefined) {
+         result.message = "내용은 필수 입력 항목입니다.";
+         return res.status(400).send(result);
+      }
 
       const updatePostQuery = "UPDATE post SET title = ?, content = ? WHERE idx = ? AND user_idx = ?";
       connection.query(updatePostQuery, [title, content, postIdx, user_idx], (queryError, updateResults) => {
