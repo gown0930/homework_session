@@ -229,9 +229,7 @@ router.put("/", (req, res) => {
    };
 
    try {
-      if (!user) {
-         throw { status: 401, message: "로그인이 필요합니다." };
-      }
+      if (!user) throw { status: 401, message: "로그인이 필요합니다." };
 
       const { idx, id, oldName, oldPhone_num, oldEmail, oldPw } = user;
       const { name, phone_num, email, pw } = req.body;
@@ -277,10 +275,7 @@ router.delete("/", async (req, res) => {
       message: '',
    };
    try {
-      if (!user) {
-         result.message = "로그인이 필요합니다.";
-         throw { status: 401, message: result.message };
-      }
+      if (!user) throw { status: 401, message: "로그인이 필요합니다." };
       const idx = user.idx;
 
       const deleteSql = "DELETE FROM user WHERE idx = ?";
