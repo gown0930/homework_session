@@ -18,7 +18,6 @@ app.use(
 
 app.use(express.json());
 
-
 // APIs
 const accountApi = require("./src/routers/account");
 app.use("/account", accountApi);
