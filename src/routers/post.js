@@ -15,25 +15,19 @@ router.post("/", (req, res) => {
       if (!user) throw { status: 401, message: "로그인이 필요합니다." };
 
       const { title, content } = req.body;
-      const user_idx = user.idx; // 사용자 인덱스
+      const user_idx = user.idx;
 
       if (title === null || title === "" || title === undefined) throw { status: 400, message: "제목은 필수 입력 항목입니다." };
       if (content === null || content === "" || content === undefined) throw { status: 400, message: "내용은 필수 입력 항목입니다." };
 
-      // 게시글을 데이터베이스에 저장하는 SQL 쿼리
       const saveSql = "INSERT INTO post (title, content, user_idx) VALUES (?, ?, ?)";
 
-      // 데이터베이스 저장
-      connection.query(saveSql, [title, content, user_idx], (saveError, saveResult) => {
-         if (saveError) throw { status: 500, message: "게시글 작성 중 에러가 발생하였습니다." };
-
-         // 데이터베이스 저장 결과에 따른 처리
-         if (saveResult.affectedRows > 0) {
-            result.message = "게시글이 성공적으로 작성되었습니다.";
-            return res.status(201).send(result);
-         } else {
-            throw { status: 500, message: "게시글 작성에 실패하였습니다." };
+      connection.query(saveSql, [title, content, user_idx], (saveError) => {
+         if (saveError) {
+            result.message = "게시글 작성 중 에러가 발생하였습니다.";
+            return res.status(500).send(result);
          }
+         return res.status(200).send(result);
       });
    } catch (error) {
       console.error("게시글 작성 중 에러 발생:", error);
@@ -51,14 +45,17 @@ router.get("/", (req, res) => {
    try {
       if (!user) throw { status: 401, message: "로그인이 필요합니다." };
       // 데이터베이스에서 모든 게시글을 최신순으로 가져오는 로직
-      const getAllPostsQuery = "SELECT title, created_at FROM post ORDER BY created_at DESC";
+      const getAllPostsQuery = "SELECT title, DATE_FORMAT(CONVERT_TZ(created_at, '+00:00', '+09:00'), '%Y-%m-%d %h:%i %p') AS created_at FROM post ORDER BY idx DESC";
       connection.query(getAllPostsQuery, (queryError, posts) => {
-         if (queryError) throw { status: 500, message: "게시글 목록 조회 중 에러가 발생하였습니다." };
-
-         result.posts = posts.map(post => ({
-            title: post?.title,
-            created_at: post?.created_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) // 한국 시간대로 변환
-         }));
+         if (queryError) {
+            result.message = "게시글 목록 조회 중 에러가 발생하였습니다.";
+            res.status(500).send(result);
+         }
+         // result.posts = posts.map(post => ({
+         //    title: post?.title,
+         //    created_at: post?.created_at
+         // }));
+         result.posts = posts;
          res.status(200).send(result);
       });
    } catch (error) {
@@ -78,15 +75,13 @@ router.get("/:idx", (req, res) => {
       if (!user) throw { status: 401, message: "로그인이 필요합니다." };
 
       const postIdx = req.params.idx;
-      const getPostQuery = "SELECT title, content, created_at FROM post WHERE idx = ?";
+      const getPostQuery = "SELECT title, content, DATE_FORMAT(CONVERT_TZ(created_at, '+00:00', '+09:00'), '%Y-%m-%d %h:%i %p') AS created_at FROM post WHERE idx = ?";
       connection.query(getPostQuery, [postIdx], (queryError, posts) => {
-         if (queryError) throw { status: 500, message: "게시글 조회 중 에러가 발생하였습니다." };
-
-         result.posts = posts.map(post => ({
-            title: post?.title,
-            content: post?.content,
-            created_at: post?.created_at?.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) // 한국 시간대로 변환
-         }));
+         if (queryError) {
+            result.message = "게시글 조회 중 에러가 발생하였습니다.";
+            res.status(500).send(result);
+         }
+         result.posts = posts;
          res.status(200).send(result);
       });
    } catch (error) {

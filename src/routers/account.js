@@ -1,11 +1,9 @@
 const router = require("express").Router()
 const path = require("path")
 const connection = require(path.join(__dirname, "../../connection.js"));
-const idPattern = /^[a-zA-Z0-9_]{5,20}$/; // 5~20자의 영문 소문자, 대문자, 숫자, 언더스코어 허용
-const pwPattern = /^(?=.*\d)(?=.*[a-zA-Z])[0-9a-zA-Z!@#$%^&*_-]{8,}$/; // 8자 이상의 영문, 숫자, 특수문자 중 2가지 이상 조합 허용
-const phonePattern = /^\d{10,11}$/; // 10자 또는 11자의 숫자 허용
-const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/; // 이메일 형식
-const nameLengthRegex = /^.{3,20}$/;//이름 길이 제한
+const validation = require("../modules/validation")
+
+
 //===========로그인 & 회원가입 ===============
 // 로그인
 router.post("/login", (req, res) => {
@@ -14,14 +12,13 @@ router.post("/login", (req, res) => {
       message: '',
    };
    try {
-      if (!id || id.trim() === "") throw { status: 400, message: '아이디를 입력해주세요.' };
-      if (!pw || pw.trim() === "") throw { status: 400, message: '비밀번호를 입력해주세요.' };
+      validation.validateId(id);
+      validation.validatePassword(pw);
 
-      // 아이디 정규식
-      if (!idPattern.test(id)) throw { status: 400, message: '아이디 형식이 올바르지 않습니다.' };
-      // 비밀번호 정규식
-      if (!pwPattern.test(pw)) throw { status: 400, message: '비밀번호 형식이 올바르지 않습니다.' };
-
+      if (req.session.user) {
+         result.message = '이미 로그인되어 있습니다.';
+         return res.status(200).send(result);
+      }
       // 로그인 처리
       const sql = "SELECT * FROM user WHERE id = ? AND password = ?";
       connection.query(sql, [id, pw], (error, results) => {
@@ -34,8 +31,6 @@ router.post("/login", (req, res) => {
             result.message = '아이디 또는 비밀번호가 일치하지 않습니다.';
             return res.status(401).send(result);
          }
-         // 로그인 성공
-         result.message = "로그인 성공";
          // 세션에 사용자 정보 저장
          req.session.user = {
             idx: results[0].idx,
@@ -44,7 +39,6 @@ router.post("/login", (req, res) => {
             phone_num: results[0].phone_num,
             email: results[0].email,
          };
-         console.log("로그인 성공 - 사용자 정보:", req.session.user);
          res.status(200).send(result);
       });
    } catch (error) {
@@ -76,43 +70,45 @@ router.post("/signup", (req, res) => {
       message: '',
    };
    try {
-      if (!id || id.trim() === "") throw { status: 400, message: '아이디를 입력해주세요.' };
-      if (!pw || pw.trim() === "") throw { status: 400, message: '비밀번호를 입력해주세요.' };
-      if (!name || name.trim() === "") throw { status: 400, message: '이름을 입력해주세요.' };
-      if (!phone_num || phone_num.trim() === "") throw { status: 400, message: '핸드폰 번호를 입력해주세요.' };
-      if (!email || email.trim() === "") throw { status: 400, message: '이메일을 입력해주세요.' };
-
-      // 아이디 정규식
-      if (!idPattern.test(id)) throw { status: 400, message: '아이디 형식이 올바르지 않습니다.' };
-      // 비밀번호 정규식
-      if (!pwPattern.test(pw)) throw { status: 400, message: '비밀번호 형식이 올바르지 않습니다.' };
-      // 전화번호 정규식
-      if (!phonePattern.test(phone_num)) throw { status: 400, message: '전화번호 형식이 올바르지 않습니다.' };
-      // 이메일 정규식
-      if (!emailPattern.test(email)) throw { status: 400, message: '이메일 형식이 올바르지 않습니다.' };
-      // 이름 정규식 
-      if (!nameLengthRegex.test(name)) throw { status: 400, message: '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.' };
-
+      validation.validateId(id);
+      validation.validatePassword(pw);
+      validation.validatePhoneNumber(phone_num);
+      validation.validateEmail(email);
+      validation.validateName(name);
       // 아이디 중복 확인
       const checkIdSql = "SELECT * FROM user WHERE id = ?";
       connection.query(checkIdSql, [id], (idError, idResults) => {
-         if (idError) throw { status: 500, message: '회원가입 중 에러가 발생하였습니다.' };
-         if (idResults.length > 0) throw { status: 409, message: '아이디가 이미 존재합니다.' };
-      });
-
-      // 전화번호 중복 확인
-      const checkPhoneSql = "SELECT * FROM user WHERE phone_num = ?";
-      connection.query(checkPhoneSql, [phone_num], (phoneError, phoneResults) => {
-         if (phoneError) throw { status: 500, message: '회원가입 중 에러가 발생하였습니다.' };
-         if (phoneResults.length > 0) throw { status: 409, message: '전화번호가 이미 존재합니다.' };
-      });
-
-      // 회원가입 처리
-      const insertUserSql = "INSERT INTO user (id, password, name, phone_num, email) VALUES (?, ?, ?, ?, ?)";
-      connection.query(insertUserSql, [id, pw, name, phone_num, email], (error, results) => {
-         if (error) throw { status: 500, message: '회원가입 중 에러가 발생하였습니다.' };
-         result.message = "회원가입 성공";
-         res.status(201).send(result);
+         if (idError) {
+            result.message = '아이디 중복 확인 중 에러가 발생하였습니다.';
+            return res.status(500).send(result);
+         }
+         if (idResults.length > 0) {
+            result.message = '아이디가 이미 존재합니다.';
+            return res.status(409).send(result);
+         }
+         // 전화번호 중복 확인
+         const checkPhoneSql = "SELECT * FROM user WHERE phone_num = ?";
+         connection.query(checkPhoneSql, [phone_num], (phoneError, phoneResults) => {
+            if (phoneError) {
+               result.message = '전화번호 중복 확인 중 에러가 발생하였습니다.';
+               console.log(phoneError)
+               return res.status(500).send(result);
+            }
+            if (phoneResults.length > 0) {
+               result.message = '전화번호가 이미 존재합니다.';
+               return res.status(409).send(result);
+            }
+            // 회원가입 처리
+            const insertUserSql = "INSERT INTO user (id, password, name, phone_num, email) VALUES (?, ?, ?, ?, ?)";
+            connection.query(insertUserSql, [id, pw, name, phone_num, email], (error, results) => {
+               if (error) {
+                  result.message = '회원가입 중 에러가 발생하였습니다.';
+                  return res.status(500).send(result);
+               }
+               result.message = "회원가입 성공";
+               return res.status(201).send(result);
+            });
+         });
       });
    } catch (error) {
       console.error("회원가입 중 에러 발생:", error);
@@ -127,24 +123,20 @@ router.get("/find-id", (req, res) => {
       message: '',
    };
    try {
-      console.log("Received values:", { name, phone_num, email });
-      console.log(`phonePattern: ${phonePattern.test(phone_num)}`);
-      console.log(`emailPattern: ${emailPattern.test(email)}`);
-      console.log(`nameLengthRegex: ${nameLengthRegex.test(name)}`);
-      if (name === null || name === "" || name === undefined) throw { status: 400, message: '이름을 입력해주세요.' };
-      if (phone_num === null || phone_num === "" || phone_num === undefined) throw { status: 400, message: '핸드폰 번호를 입력해주세요.' };
-      if (email === null || email === "" || email === undefined) throw { status: 400, message: '이메일을 입력해주세요.' };
-
-      if (!phonePattern.test(phone_num)) throw { status: 400, message: '전화번호 형식이 올바르지 않습니다.' };
-      if (!emailPattern.test(email)) throw { status: 400, message: '이메일 형식이 올바르지 않습니다.' };
-      if (!nameLengthRegex.test(name)) throw { status: 400, message: '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.' };
-
+      validation.validateName(name);
+      validation.validatePhoneNumber(phone_num);
+      validation.validateEmail(email);
       // db 처리로 id 가져오기
       const findIdSql = "SELECT id FROM user WHERE name = ? AND phone_num = ? AND email = ?";
       connection.query(findIdSql, [name, phone_num, email], (error, results) => {
-         if (error) throw { status: 500, message: '아이디 찾기 중 에러가 발생하였습니다.' };
-         if (!Array.isArray(results) || results.length === 0) throw { status: 404, message: '일치하는 사용자가 없습니다.' };
-
+         if (error) {
+            result.message = '아이디 찾기 중 에러가 발생하였습니다.';
+            res.status(500).send(result);
+         }
+         if (!Array.isArray(results) || results.length === 0) {
+            result.message = '일치하는 사용자가 없습니다.';
+            res.status(404).send(result);
+         }
          // 결과에서 아이디 추출
          const foundId = results[0].id;
          result.message = '아이디 찾기 성공';
@@ -157,7 +149,6 @@ router.get("/find-id", (req, res) => {
       return res.status(error.status || 500).send(result);
    }
 });
-
 //비밀번호 찾기
 router.get("/find-pw", (req, res) => {
    const { id, name, phone_num, email } = req.query;
@@ -165,21 +156,21 @@ router.get("/find-pw", (req, res) => {
       message: '',
    };
    try {
-      if (id === null || id === "" || id === undefined) throw { status: 400, message: '아이디를 입력해주세요.' };
-      if (name === null || name === "" || name === undefined) throw { status: 400, message: '이름을 입력해주세요.' };
-      if (phone_num === null || phone_num === "" || phone_num === undefined) throw { status: 400, message: '핸드폰 번호를 입력해주세요.' };
-      if (email === null || email === "" || email === undefined) throw { status: 400, message: '이메일을 입력해주세요.' };
-
-      if (!idPattern.test(id)) throw { status: 400, message: '아이디 형식이 올바르지 않습니다.' };
-      if (!phonePattern.test(phone_num)) throw { status: 400, message: '전화번호 형식이 올바르지 않습니다.' };
-      if (!emailPattern.test(email)) throw { status: 400, message: '이메일 형식이 올바르지 않습니다.' };
-      if (!nameLengthRegex.test(name)) throw { status: 400, message: '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.' };
-
+      validation.validateId(id);
+      validation.validatePhoneNumber(phone_num);
+      validation.validateEmail(email);
+      validation.validateName(name);
       // 비밀번호를 가져오기 위한 쿼리
       const getPasswordSql = "SELECT password FROM user WHERE id = ? AND name = ? AND phone_num = ? AND email = ?";
       connection.query(getPasswordSql, [id, name, phone_num, email], (error, results) => {
-         if (error) throw { status: 500, message: "비밀번호 찾기 중 에러가 발생하였습니다." };
-         if (results.length === 0) throw { status: 404, message: '일치하는 사용자가 없습니다.' };
+         if (error) {
+            result.message = ' 찾기 중 에러가 발생하였습니다.';
+            res.status(500).send(result);
+         }
+         if (!Array.isArray(results) || results.length === 0) {
+            result.message = '일치하는 사용자가 없습니다.';
+            res.status(404).send(result);
+         }
          // 결과에서 비밀번호 추출
          const foundPassword = results[0].password;
          // 로그인 처리
@@ -194,6 +185,7 @@ router.get("/find-pw", (req, res) => {
 });
 
 //rest에서 get이랑 delete는 body를 못 보내서, querySting이랑 passparameter 있음.
+
 //============내 정보================
 // 내 정보 보기
 router.get("/", (req, res) => {
@@ -231,35 +223,33 @@ router.put("/", (req, res) => {
    try {
       if (!user) throw { status: 401, message: "로그인이 필요합니다." };
 
-      const { idx, id, oldName, oldPhone_num, oldEmail, oldPw } = user;
+      const { idx } = user;
       const { name, phone_num, email, pw } = req.body;
 
-      if (!pw || pw.trim() === "") throw { status: 400, message: '비밀번호를 입력해주세요.' };
-      if (!name || name.trim() === "") throw { status: 400, message: '이름을 입력해주세요.' };
-      if (!phone_num || phone_num.trim() === "") throw { status: 400, message: '핸드폰 번호를 입력해주세요.' };
-      if (!email || email.trim() === "") throw { status: 400, message: '이메일을 입력해주세요.' };
-
-      if (!pwPattern.test(pw)) throw { status: 400, message: '비밀번호 형식이 올바르지 않습니다.' };
-      if (!phonePattern.test(phone_num)) throw { status: 400, message: '전화번호 형식이 올바르지 않습니다.' };
-      if (!emailPattern.test(email)) throw { status: 400, message: '이메일 형식이 올바르지 않습니다.' };
-      if (!nameLengthRegex.test(name)) throw { status: 400, message: '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.' };
+      validation.validatePassword(pw);
+      validation.validatePhoneNumber(phone_num);
+      validation.validateEmail(email);
+      validation.validateName(name);
 
       // 전화번호 중복 확인
       connection.query("SELECT * FROM user WHERE phone_num = ? AND idx <> ?", [phone_num, idx], (phoneError, phoneResults) => {
-         if (phoneError) throw { status: 500, message: "회원가입 중 에러가 발생하였습니다." };
-         if (phoneResults.length > 0) throw { status: 409, message: '전화번호가 이미 존재합니다.' };
-      });
-      // DB 통신
-      connection.query("UPDATE user SET password = ?, phone_num = ?, email = ?, name = ? WHERE idx = ?", [pw, phone_num, email, name, idx], (updateError, updateResults) => {
-         if (updateError) throw { status: 500, message: "내 정보 수정 중 에러가 발생하였습니다." };
-         if (updateResults.affectedRows > 0) {
+         if (phoneError) {
+            result.message = '전화번호 중복 확인 중 에러가 발생하였습니다.';
+            return res.status(500).send(result);
+         }
+         if (phoneResults.length > 0) {
+            result.message = '전화번호가 이미 존재합니다.';
+            return res.status(409).send(result);
+         }
+         // DB 통신
+         connection.query("UPDATE user SET password = ?, phone_num = ?, email = ?, name = ? WHERE idx = ?", [pw, phone_num, email, name, idx], (updateError, updateResults) => {
+            if (updateError) {
+               result.message = '내 정보 수정 중 에러가 발생하였습니다.';
+               return res.status(500).send(result);
+            }
             result.message = "회원 정보가 성공적으로 수정되었습니다.";
             res.status(200).send(result);
-         } else {
-            console.error("영향 받은 행이 없음");
-            throw { status: 500, message: "회원 정보 수정에 실패하였습니다." };
-         }
-
+         });
       });
    } catch (error) {
       console.error("내 정보 수정 중 에러 발생:", error);
@@ -267,7 +257,6 @@ router.put("/", (req, res) => {
       return res.status(error.status || 500).send(result);
    }
 });
-
 // 회원 탈퇴
 router.delete("/", async (req, res) => {
    const user = req.session.user;
@@ -280,15 +269,12 @@ router.delete("/", async (req, res) => {
 
       const deleteSql = "DELETE FROM user WHERE idx = ?";
       connection.query(deleteSql, [idx], (deleteError, deleteResult) => {
-         if (deleteError) throw { status: 500, message: "회원 삭제 중 에러가 발생하였습니다." };
-         // DB 통신 결과 처리
-         if (deleteResult.affectedRows > 0) {
-            result.message = "회원 정보가 성공적으로 삭제되었습니다.";
-            return res.status(200).send(result);
-         } else {
-            result.message = '회원 정보 삭제에 실패하였습니다. 유효한 사용자 인덱스인지 확인해주세요.';
-            throw { status: 500, message: result.message };
+         if (deleteError) {
+            result.message = "회원 삭제 중 에러가 발생하였습니다.";
+            return res.status(500).send(result);
          }
+         result.message = "회원 정보가 성공적으로 삭제되었습니다.";
+         return res.status(200).send(result);
       });
    } catch (error) {
       console.error("회원 탈퇴 중 에러 발생:", error);
