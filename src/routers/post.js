@@ -1,19 +1,18 @@
 const router = require("express").Router()
+const postgresClient = require("../modules/connection");
 const path = require("path")
 const connection = require(path.join(__dirname, "../../connection.js"));
-
+const loginCheck = require("../middleware/loginCheck")
 //=========게시글==========
 
 // 게시글 쓰기
-router.post("/", (req, res) => {
-   const user = req.session.user;
+router.post("/", loginCheck, (req, res) => {
    const result = {
       message: '',
    };
 
    try {
-      if (!user) throw { status: 401, message: "로그인이 필요합니다." };
-
+      req.user = user;
       const { title, content } = req.body;
       const user_idx = user.idx;
 
@@ -37,14 +36,12 @@ router.post("/", (req, res) => {
 });
 
 //게시판 보기
-router.get("/", (req, res) => {
-   const user = req.session.user;
+router.get("/", loginCheck, (req, res) => {
    const result = {
       message: '',
    };
    try {
-      if (!user) throw { status: 401, message: "로그인이 필요합니다." };
-      // 데이터베이스에서 모든 게시글을 최신순으로 가져오는 로직
+      req.user = user;
       const getAllPostsQuery = "SELECT title, DATE_FORMAT(CONVERT_TZ(created_at, '+00:00', '+09:00'), '%Y-%m-%d %h:%i %p') AS created_at FROM post ORDER BY idx DESC";
       connection.query(getAllPostsQuery, (queryError, posts) => {
          if (queryError) {
@@ -66,14 +63,12 @@ router.get("/", (req, res) => {
 });
 
 //게시글 자세히 보기
-router.get("/:idx", (req, res) => {
-   const user = req.session.user;
+router.get("/:idx", loginCheck, (req, res) => {
    const result = {
       message: '',
    };
    try {
-      if (!user) throw { status: 401, message: "로그인이 필요합니다." };
-
+      req.user = user;
       const postIdx = req.params.idx;
       const getPostQuery = "SELECT title, content, DATE_FORMAT(CONVERT_TZ(created_at, '+00:00', '+09:00'), '%Y-%m-%d %h:%i %p') AS created_at FROM post WHERE idx = ?";
       connection.query(getPostQuery, [postIdx], (queryError, posts) => {
@@ -92,14 +87,12 @@ router.get("/:idx", (req, res) => {
 });
 
 //게시글 수정하기
-router.put("/:idx", (req, res) => {
-   const user = req.session.user;
+router.put("/:idx", loginCheck, (req, res) => {
    const result = {
       message: '',
    };
    try {
-      if (!user) throw { status: 401, message: "로그인이 필요합니다." };
-
+      req.user = user;
       const postIdx = req.params.idx;
       const { title, content } = req.body;
       const user_idx = user.idx;
@@ -128,15 +121,13 @@ router.put("/:idx", (req, res) => {
 });
 
 //게시글 삭제하기
-router.delete("/:idx", (req, res) => {
-   const user = req.session.user;
+router.delete("/:idx", loginCheck, (req, res) => {
    const result = {
       message: '',
    };
 
    try {
-      if (!user) throw { status: 401, message: "로그인이 필요합니다." };
-
+      req.user = user;
       const postIdx = req.params.idx;
       const deletePostQuery = "DELETE FROM post WHERE idx = ? AND user_idx = ?";
       connection.query(deletePostQuery, [postIdx, user.idx], (queryError, deleteResults) => {

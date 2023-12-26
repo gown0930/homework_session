@@ -7,13 +7,16 @@ const postgresConnection = {
    database: "web",
    port: 5432,
 };
+
 const postgresClient = new Client(postgresConnection);
 
-postgresClient.connect()
-   .then(() => {
-      console.log("Connected to PostgreSQL database");
-   })
-   .catch((err) => {
-      console.error("Error connecting to PostgreSQL database:", err);
-   });
+(async () => {
+   try {
+      await postgresClient.connect();
+      console.log("PostgreSQL 연결");
+   } catch (err) {
+      console.error("PostgreSQL 연결 에러:", err);
+   }
+})();
+
 module.exports = postgresClient;

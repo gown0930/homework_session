@@ -1,6 +1,8 @@
-const router = require("express").Router()
+const router = require("express").Router();
+const postgresClient = require("../modules/connection");
 const path = require("path")
 const connection = require(path.join(__dirname, "../../connection.js"));
+const loginCheck = require("../middleware/loginCheck")
 //=========댓글=============
 
 //postIdx body로 받아오기

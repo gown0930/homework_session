@@ -1,16 +1,16 @@
 const router = require("express").Router()
+const postgresClient = require("../modules/connection.js");
 const path = require("path")
 const connection = require(path.join(__dirname, "../../connection.js"));
 const validation = require("../modules/validation")
-
+const createResult = require("../modules/result")
 
 //===========로그인 & 회원가입 ===============
 // 로그인
-router.post("/login", (req, res) => {
+router.post('/login', async (req, res) => {
    const { id, pw } = req.body;
-   const result = {
-      message: '',
-   };
+   const result = createResult();
+
    try {
       validation.validateId(id);
       validation.validatePassword(pw);
@@ -19,39 +19,36 @@ router.post("/login", (req, res) => {
          result.message = '이미 로그인되어 있습니다.';
          return res.status(200).send(result);
       }
+
       // 로그인 처리
-      const sql = "SELECT * FROM user WHERE id = ? AND password = ?";
-      connection.query(sql, [id, pw], (error, results) => {
-         if (error) {
-            console.error("로그인 쿼리 중 에러 발생:", error);
-            result.message = "로그인 중 에러가 발생하였습니다.";
-            return res.status(500).send(result);
-         }
-         if (results.length === 0) {
-            result.message = '아이디 또는 비밀번호가 일치하지 않습니다.';
-            return res.status(401).send(result);
-         }
-         // 세션에 사용자 정보 저장
-         req.session.user = {
-            idx: results[0].idx,
-            id: results[0].id,
-            name: results[0].name,
-            phone_num: results[0].phone_num,
-            email: results[0].email,
-         };
-         res.status(200).send(result);
-      });
+      const sql = `SELECT * FROM user WHERE id = $1 AND password = $2`;
+      //자꾸 id없다고 오류 뜸...;;;;;;
+      console.log('실행할 쿼리:', sql);
+      const { rows } = await postgresClient.query(sql, [id, pw]);
+
+      if (rows.length === 0) {
+         result.message = '아이디 또는 비밀번호가 일치하지 않습니다.';
+         return res.status(401).send(result);
+      }
+
+      // 세션에 사용자 정보 저장
+      req.session.user = {
+         idx: rows[0].idx,
+         id: rows[0].id,
+         name: rows[0].name,
+         phone_num: rows[0].phone_num,
+         email: rows[0].email,
+      };
+      res.status(200).send(result);
    } catch (error) {
-      console.error("로그인 중 에러 발생:", error);
-      result.message = error.message || "로그인 중 에러가 발생하였습니다.";
+      console.error('로그인 중 에러 발생:', error);
+      result.message = error.message || '로그인 중 에러가 발생하였습니다.';
       return res.status(error.status || 500).send(result);
    }
 });
 // 로그아웃
 router.post("/logout", (req, res) => {
-   const result = {
-      message: '',
-   };
+   const result = createResult();
    try {
       // 세션에서 사용자 정보 삭제
       delete req.session.user;
@@ -66,9 +63,7 @@ router.post("/logout", (req, res) => {
 // 회원가입
 router.post("/signup", (req, res) => {
    const { id, pw, name, phone_num, email } = req.body;
-   const result = {
-      message: '',
-   };
+   const result = createResult();
    try {
       validation.validateId(id);
       validation.validatePassword(pw);
@@ -119,9 +114,7 @@ router.post("/signup", (req, res) => {
 // 아이디 찾기
 router.get("/find-id", (req, res) => {
    const { name, phone_num, email } = req.query;
-   const result = {
-      message: '',
-   };
+   const result = createResult();
    try {
       validation.validateName(name);
       validation.validatePhoneNumber(phone_num);
@@ -152,9 +145,7 @@ router.get("/find-id", (req, res) => {
 //비밀번호 찾기
 router.get("/find-pw", (req, res) => {
    const { id, name, phone_num, email } = req.query;
-   const result = {
-      message: '',
-   };
+   const result = createResult();
    try {
       validation.validateId(id);
       validation.validatePhoneNumber(phone_num);
@@ -190,9 +181,7 @@ router.get("/find-pw", (req, res) => {
 // 내 정보 보기
 router.get("/", (req, res) => {
    const user = req.session.user;
-   let result = {
-      message: '',
-   };
+   const result = createResult();
    try {
       if (!user) {
          result.message = "로그인이 필요합니다.";
@@ -216,10 +205,7 @@ router.get("/", (req, res) => {
 // 내 정보 수정
 router.put("/", (req, res) => {
    const user = req.session.user;
-   const result = {
-      message: '',
-   };
-
+   const result = createResult();
    try {
       if (!user) throw { status: 401, message: "로그인이 필요합니다." };
 
@@ -260,9 +246,7 @@ router.put("/", (req, res) => {
 // 회원 탈퇴
 router.delete("/", async (req, res) => {
    const user = req.session.user;
-   const result = {
-      message: '',
-   };
+   const result = createResult();
    try {
       if (!user) throw { status: 401, message: "로그인이 필요합니다." };
       const idx = user.idx;
