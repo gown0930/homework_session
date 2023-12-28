@@ -9,8 +9,9 @@ router.post("/", loginCheck, async (req, res) => {
    const result = createResult();
 
    try {
+      const user = req.user;
       const { title, content } = req.body;
-      const user_idx = req.user.idx;
+      const user_idx = user.idx;
 
       if (!title || title.trim() === "") {
          throw { status: 400, message: "제목은 필수 입력 항목입니다." };
@@ -36,6 +37,7 @@ router.post("/", loginCheck, async (req, res) => {
 router.get("/", loginCheck, async (req, res) => {
    const result = createResult();
    try {
+      const user = req.user;
       const getAllPostsQuery = "SELECT title, TO_CHAR(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD HH:MI AM') AS created_at FROM homework.post ORDER BY idx DESC";
 
       const { rows: posts } = await postgresClient.query(getAllPostsQuery);
@@ -53,6 +55,7 @@ router.get("/", loginCheck, async (req, res) => {
 router.get("/:idx", loginCheck, async (req, res) => {
    const result = createResult();
    try {
+      const user = req.user;
       const postIdx = req.params.idx;
       const getPostQuery = "SELECT title, content, TO_CHAR(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD HH:MI AM') AS created_at FROM homework.post WHERE idx = $1";
 
@@ -71,6 +74,7 @@ router.get("/:idx", loginCheck, async (req, res) => {
 router.put("/:idx", loginCheck, async (req, res) => {
    const result = createResult();
    try {
+      const user = req.user;
       const postIdx = req.params.idx;
       const { title, content } = req.body;
       const user_idx = req.user.idx;
@@ -105,6 +109,7 @@ router.put("/:idx", loginCheck, async (req, res) => {
 router.delete("/:idx", loginCheck, async (req, res) => {
    const result = createResult();
    try {
+      const user = req.user;
       const postIdx = req.params.idx;
       const user_idx = req.user.idx;
 

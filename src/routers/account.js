@@ -167,7 +167,7 @@ router.get("/find-pw", async (req, res) => {
 router.get("/", loginCheck, (req, res) => {
    const result = createResult();
    try {
-      req.user = user;
+      const user = req.user;
       // 사용자 정보를 가져와서 처리
       const { id, name, phone_num, email } = user;
       result.data = {
@@ -188,8 +188,7 @@ router.put("/", loginCheck, async (req, res) => {
    const result = createResult();
 
    try {
-      req.user = user;
-
+      const user = req.user;
       const { idx } = user;
       const { name, phone_num, email, pw } = req.body;
 
@@ -227,7 +226,7 @@ router.delete("/", loginCheck, async (req, res) => {
    const result = createResult();
 
    try {
-      req.user = user;
+      const user = req.user;
       const idx = user.idx;
 
       const deleteSql = "DELETE FROM homework.user WHERE idx = $1";
