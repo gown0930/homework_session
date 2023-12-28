@@ -4,7 +4,7 @@ const postgresConnection = {
    user: "ubuntu",
    password: "1234",
    host: "localhost",
-   database: "web",
+   database: "homework",
    port: 5432,
 };
 
