@@ -1,7 +1,8 @@
 const router = require("express").Router()
-const postgresClient = require("../modules/connection");
+const postgresPool = require("../modules/connection");
 const loginCheck = require("../middleware/loginCheck")
 const createResult = require("../modules/result")
+const validation = require("../modules/validation")
 //=========게시글==========
 
 // 게시글 쓰기
@@ -13,17 +14,13 @@ router.post("/", loginCheck, async (req, res) => {
       const { title, content } = req.body;
       const user_idx = user.idx;
 
-      if (!title || title.trim() === "") {
-         throw { status: 400, message: "제목은 필수 입력 항목입니다." };
-      }
-      if (!content || content.trim() === "") {
-         throw { status: 400, message: "내용은 필수 입력 항목입니다." };
-      }
+      validation.validateContent(title);
+      validation.validateContent(content);
 
       const saveSql = "INSERT INTO homework.post (title, content, user_idx) VALUES ($1, $2, $3)";
 
       // 게시글 작성 쿼리 실행
-      await postgresClient.query(saveSql, [title, content, user_idx]);
+      await postgresPool.query(saveSql, [title, content, user_idx]);
 
       return res.status(200).send(result);
    } catch (error) {
@@ -40,7 +37,7 @@ router.get("/", loginCheck, async (req, res) => {
       const user = req.user;
       const getAllPostsQuery = "SELECT title, TO_CHAR(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD HH:MI AM') AS created_at FROM homework.post ORDER BY idx DESC";
 
-      const { rows: posts } = await postgresClient.query(getAllPostsQuery);
+      const { rows: posts } = await postgresPool.query(getAllPostsQuery);
 
       result.posts = posts;
       res.status(200).send(result);
@@ -59,7 +56,7 @@ router.get("/:idx", loginCheck, async (req, res) => {
       const postIdx = req.params.idx;
       const getPostQuery = "SELECT title, content, TO_CHAR(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD HH:MI AM') AS created_at FROM homework.post WHERE idx = $1";
 
-      const { rows: posts } = await postgresClient.query(getPostQuery, [postIdx]);
+      const { rows: posts } = await postgresPool.query(getPostQuery, [postIdx]);
 
       result.posts = posts;
       res.status(200).send(result);
@@ -79,15 +76,11 @@ router.put("/:idx", loginCheck, async (req, res) => {
       const { title, content } = req.body;
       const user_idx = req.user.idx;
 
-      if (!title || title.trim() === "") {
-         throw { status: 400, message: "제목은 필수 입력 항목입니다." };
-      }
-      if (!content || content.trim() === "") {
-         throw { status: 400, message: "내용은 필수 입력 항목입니다." };
-      }
+      validation.validateContent(title);
+      validation.validateContent(content);
 
       const updatePostQuery = "UPDATE homework.post SET title = $1, content = $2 WHERE idx = $3 AND user_idx = $4 RETURNING *";
-      const { rows: updateResults } = await postgresClient.query(updatePostQuery, [title, content, postIdx, user_idx]);
+      const { rows: updateResults } = await postgresPool.query(updatePostQuery, [title, content, postIdx, user_idx]);
 
       if (updateResults.length > 0) {
          result.message = "게시글이 성공적으로 수정되었습니다.";
@@ -114,7 +107,7 @@ router.delete("/:idx", loginCheck, async (req, res) => {
       const user_idx = req.user.idx;
 
       const deletePostQuery = "DELETE FROM homework.post WHERE idx = $1 AND user_idx = $2 RETURNING *";
-      const { rows: deleteResults } = await postgresClient.query(deletePostQuery, [postIdx, user_idx]);
+      const { rows: deleteResults } = await postgresPool.query(deletePostQuery, [postIdx, user_idx]);
 
       if (deleteResults.length > 0) {
          result.message = "게시글이 성공적으로 삭제되었습니다.";

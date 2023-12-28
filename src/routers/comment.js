@@ -1,7 +1,8 @@
 const router = require("express").Router();
-const postgresClient = require("../modules/connection");
+const postgresPool = require("../modules/connection");
 const loginCheck = require("../middleware/loginCheck")
 const createResult = require("../modules/result")
+const validation = require("../modules/validation")
 //=========댓글=============
 
 //postIdx body로 받아오기
@@ -15,12 +16,11 @@ router.post("/", loginCheck, async (req, res) => {
       const { post_idx, content } = req.body;
       const user_idx = user.idx;
 
-      if (!content || content.trim() === "") throw { status: 400, message: "내용은 필수 입력 항목입니다." };
-
+      validation.validateContent(content);
       const addCommentQuery = "INSERT INTO homework.comment (comment, user_idx, post_idx) VALUES ($1, $2, $3) RETURNING *";
 
       // 댓글 작성 쿼리 실행
-      const { rows: addCommentResult } = await postgresClient.query(addCommentQuery, [content, user_idx, post_idx]);
+      const { rows: addCommentResult } = await postgresPool.query(addCommentQuery, [content, user_idx, post_idx]);
 
       if (addCommentResult.length > 0) {
          result.message = "댓글이 성공적으로 작성되었습니다.";
@@ -52,9 +52,9 @@ router.get("/", loginCheck, async (req, res) => {
       WHERE post_idx = $1 
       ORDER BY idx DESC
     `;
-    
+
       // 댓글 조회 쿼리 실행
-      const { rows: comments } = await postgresClient.query(getCommentsQuery, [post_idx]);
+      const { rows: comments } = await postgresPool.query(getCommentsQuery, [post_idx]);
 
       result.comments = comments;
       res.status(200).send(result);
@@ -73,12 +73,11 @@ router.put("/:commentIdx", loginCheck, async (req, res) => {
 
    try {
       const user = req.user;
-      if (content === null || content === "" || content === undefined) throw { status: 400, message: "내용은 필수 입력 항목입니다." };
-
+      validation.validateContent(content);
       const updateCommentQuery = "UPDATE homework.comment SET comment = $1, created_at = CURRENT_TIMESTAMP WHERE idx = $2 AND user_idx = $3 AND post_idx = $4";
 
       // 댓글 수정 쿼리 실행
-      const { rowCount } = await postgresClient.query(updateCommentQuery, [content, commentIdx, user.idx, post_idx]);
+      const { rowCount } = await postgresPool.query(updateCommentQuery, [content, commentIdx, user.idx, post_idx]);
 
       if (rowCount > 0) {
          result.message = "댓글이 성공적으로 수정되었습니다.";
@@ -106,7 +105,7 @@ router.delete("/:commentIdx", loginCheck, async (req, res) => {
       const deleteCommentQuery = "DELETE FROM homework.comment WHERE idx = $1 AND user_idx = $2 AND post_idx = $3";
 
       // 댓글 삭제 쿼리 실행
-      const { rowCount } = await postgresClient.query(deleteCommentQuery, [commentIdx, user.idx, post_idx]);
+      const { rowCount } = await postgresPool.query(deleteCommentQuery, [commentIdx, user.idx, post_idx]);
 
       if (rowCount > 0) {
          res.status(200).send(result);

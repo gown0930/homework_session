@@ -31,10 +31,15 @@ function validateName(name) {
    if (!nameLengthRegex.test(name)) throw { status: 400, message: '이름은 최소 3자 이상, 최대 20자까지 입력 가능합니다.' };
 }
 
+function validateContent(content) {
+   if (!content || content.trim() === "") throw { status: 400, message: '입력 항목을 모두 입력해주세요' };
+}
+
 module.exports = {
    validateId,
    validatePassword,
    validatePhoneNumber,
    validateEmail,
    validateName,
+   validateContent
 };
