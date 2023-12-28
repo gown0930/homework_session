@@ -2,6 +2,7 @@ const router = require("express").Router()
 const postgresClient = require("../modules/connection.js");
 const validation = require("../modules/validation")
 const createResult = require("../modules/result")
+const loginCheck = require("../middleware/loginCheck")
 
 //===========로그인 & 회원가입 ===============
 // 로그인
@@ -20,7 +21,6 @@ router.post('/login', async (req, res) => {
 
       // 로그인 처리
       const sql = `SELECT * FROM homework.user WHERE id = $1 AND password = $2`;
-      console.log('실행할 쿼리:', sql);
       const { rows } = await postgresClient.query(sql, [id, pw]);
 
       if (rows.length === 0) {
@@ -36,6 +36,7 @@ router.post('/login', async (req, res) => {
          phone_num: rows[0].phone_num,
          email: rows[0].email,
       };
+      console.log(rows[0].idx);
       res.status(200).send(result);
    } catch (error) {
       console.error('로그인 중 에러 발생:', error);
@@ -163,14 +164,10 @@ router.get("/find-pw", async (req, res) => {
 
 //============내 정보================
 // 내 정보 보기
-router.get("/", (req, res) => {
-   const user = req.session.user;
+router.get("/", loginCheck, (req, res) => {
    const result = createResult();
    try {
-      if (!user) {
-         result.message = "로그인이 필요합니다.";
-         return res.status(401).send(result);
-      }
+      req.user = user;
       // 사용자 정보를 가져와서 처리
       const { id, name, phone_num, email } = user;
       result.data = {
@@ -187,12 +184,11 @@ router.get("/", (req, res) => {
    }
 });
 // 내 정보 수정
-router.put("/", async (req, res) => {
-   const user = req.session.user;
+router.put("/", loginCheck, async (req, res) => {
    const result = createResult();
 
    try {
-      if (!user) throw { status: 401, message: "로그인이 필요합니다." };
+      req.user = user;
 
       const { idx } = user;
       const { name, phone_num, email, pw } = req.body;
@@ -227,12 +223,11 @@ router.put("/", async (req, res) => {
    }
 });
 // 회원 탈퇴
-router.delete("/", async (req, res) => {
-   const user = req.session.user;
+router.delete("/", loginCheck, async (req, res) => {
    const result = createResult();
 
    try {
-      if (!user) throw { status: 401, message: "로그인이 필요합니다." };
+      req.user = user;
       const idx = user.idx;
 
       const deleteSql = "DELETE FROM homework.user WHERE idx = $1";
