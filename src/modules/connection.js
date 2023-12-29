@@ -1,11 +1,21 @@
+require('dotenv').config();
 const { Pool } = require("pg");
 
+// 필수 환경 변수 체크 및 PostgreSQL 연결 정보 설정
+const requiredEnvVars = ["DB_USER", "DB_PASSWORD", "DB_HOST", "DB_NAME", "DB_PORT"];
+for (const envVar of requiredEnvVars) {
+   if (!process.env[envVar]) {
+      throw new Error(`오류: 필수 환경 변수 ${envVar} 가 설정되어 있지 않습니다.`);
+   }
+}
+
+// 필수 환경 변수가 모두 설정되어 있다면 PostgreSQL 연결 정보 설정
 const postgresConnection = {
-   user: "ubuntu",
-   password: "1234",
-   host: "localhost",
-   database: "homework",
-   port: 5432,
+   user: process.env.DB_USER,
+   password: process.env.DB_PASSWORD,
+   host: process.env.DB_HOST,
+   database: process.env.DB_NAME,
+   port: process.env.DB_PORT,
 };
 
 const postgresPool = new Pool(postgresConnection);
