@@ -9,7 +9,6 @@ for (const envVar of requiredEnvVars) {
    }
 }
 
-// 필수 환경 변수가 모두 설정되어 있다면 PostgreSQL 연결 정보 설정
 const postgresConnection = {
    user: process.env.DB_USER,
    password: process.env.DB_PASSWORD,

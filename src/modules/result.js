@@ -1,6 +1,6 @@
-const createResult = () => {
+const createResult = (message = null) => {
    return {
-      message: null
+      message: message
    }
 }
 module.exports = createResult;

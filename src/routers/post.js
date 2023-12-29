@@ -82,14 +82,11 @@ router.put("/:idx", loginCheck, async (req, res) => {
       const updatePostQuery = "UPDATE homework.post SET title = $1, content = $2 WHERE idx = $3 AND user_idx = $4 RETURNING *";
       const { rows: updateResults } = await postgresPool.query(updatePostQuery, [title, content, postIdx, user_idx]);
 
-      if (updateResults.length > 0) {
-         result.message = "게시글이 성공적으로 수정되었습니다.";
-         return res.status(200).send(result);
-      } else {
-         // 수정된 행이 없으면 해당 게시글이 현재 사용자에게 속하지 않음 또는 게시글이 존재하지 않음
-         result.message = "게시글을 수정할 수 있는 권한이 없거나 게시글이 존재하지 않습니다.";
-         return res.status(403).send(result);
+      if (updateResults.length === 0) {
+         return res.status(403).send(createResult("게시글을 수정할 수 있는 권한이 없거나 게시글이 존재하지 않습니다."));
       }
+      return res.status(200).send(result);
+
    } catch (error) {
       console.error("게시글 수정 중 에러 발생:", error);
       result.message = error.message || "게시글 수정 중 에러가 발생하였습니다.";
@@ -109,14 +106,9 @@ router.delete("/:idx", loginCheck, async (req, res) => {
       const deletePostQuery = "DELETE FROM homework.post WHERE idx = $1 AND user_idx = $2 RETURNING *";
       const { rows: deleteResults } = await postgresPool.query(deletePostQuery, [postIdx, user_idx]);
 
-      if (deleteResults.length > 0) {
-         result.message = "게시글이 성공적으로 삭제되었습니다.";
-         return res.status(200).send(result);
-      } else {
-         // 삭제된 행이 없으면 해당 게시글이 현재 사용자에게 속하지 않음 또는 게시글이 존재하지 않음
-         result.message = "게시글을 삭제할 수 있는 권한이 없거나 게시글이 존재하지 않습니다.";
-         return res.status(403).send(result);
-      }
+      if (deleteResults.length === 0) return res.status(403).send(createResult("게시글을 삭제할 수 있는 권한이 없거나 게시글이 존재하지 않습니다."));
+      return res.status(200).send(result);
+
    } catch (error) {
       console.error("게시글 삭제 중 에러 발생:", error);
       result.message = error.message || "게시글 삭제 중 에러가 발생하였습니다.";

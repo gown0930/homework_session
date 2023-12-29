@@ -22,13 +22,10 @@ router.post("/", loginCheck, async (req, res) => {
       // 댓글 작성 쿼리 실행
       const { rows: addCommentResult } = await postgresPool.query(addCommentQuery, [content, user_idx, post_idx]);
 
-      if (addCommentResult.length > 0) {
-         result.message = "댓글이 성공적으로 작성되었습니다.";
-         return res.status(200).send(result);
-      } else {
-         result.message = "댓글 작성 중 에러가 발생하였습니다.";
-         return res.status(500).send(result);
-      }
+      if (addCommentResult.length === 0) return res.status(500).send(createResult("댓글 작성 중 에러가 발생하였습니다."));
+
+      return res.status(200).send(result);
+
    } catch (error) {
       console.error("댓글 작성 중 에러 발생:", error);
       result.message = error.message || "댓글 작성 중 에러가 발생하였습니다.";
@@ -79,14 +76,10 @@ router.put("/:commentIdx", loginCheck, async (req, res) => {
       // 댓글 수정 쿼리 실행
       const { rowCount } = await postgresPool.query(updateCommentQuery, [content, commentIdx, user.idx, post_idx]);
 
-      if (rowCount > 0) {
-         result.message = "댓글이 성공적으로 수정되었습니다.";
-         res.status(200).send(result);
-      } else {
-         // 수정된 행이 없으면 해당 댓글이 현재 사용자에게 속하지 않음 또는 댓글이 존재하지 않음
-         result.message = "댓글을 수정할 수 있는 권한이 없거나 댓글이 존재하지 않습니다.";
-         res.status(403).send(result);
-      }
+      if (rowCount === 0) return res.status(403).send(createResult("댓글을 수정할 수 있는 권한이 없거나 댓글이 존재하지 않습니다."));
+
+      return res.status(200).send(result);
+
    } catch (error) {
       console.error("댓글 수정 중 에러 발생:", error);
       result.message = error.message || "댓글 수정 중 에러가 발생하였습니다.";
@@ -107,11 +100,10 @@ router.delete("/:commentIdx", loginCheck, async (req, res) => {
       // 댓글 삭제 쿼리 실행
       const { rowCount } = await postgresPool.query(deleteCommentQuery, [commentIdx, user.idx, post_idx]);
 
-      if (rowCount > 0) {
-         res.status(200).send(result);
-      } else {
-         throw { status: 500, message: "댓글 삭제에 실패하였습니다. 권한이 없거나 댓글을 찾을 수 없습니다." };
-      }
+      if (rowCount === 0) throw { status: 500, message: "댓글 삭제에 실패하였습니다. 권한이 없거나 댓글을 찾을 수 없습니다." };
+
+      return res.status(200).send(result);
+
    } catch (error) {
       console.error("댓글 삭제 중 에러 발생:", error);
       result.message = error.message || "댓글 삭제 중 에러가 발생하였습니다.";
