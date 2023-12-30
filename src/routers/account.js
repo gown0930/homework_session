@@ -1,8 +1,9 @@
 const router = require("express").Router()
 const postgresPool = require("../modules/connection");
-const validation = require("../modules/validation")
-const createResult = require("../modules/result")
-const loginCheck = require("../middleware/loginCheck")
+const validation = require("../modules/validation");
+const createResult = require("../modules/result");
+const loginCheck = require("../middleware/loginCheck");
+const handleServerError = require('../modules/errorHandler');
 
 //===========로그인 & 회원가입 ===============
 // 로그인
@@ -31,9 +32,7 @@ router.post('/login', async (req, res) => {
       };
       res.status(200).send(result);
    } catch (error) {
-      console.error('로그인 중 에러 발생:', error);
-      result.message = error.message || '로그인 중 에러가 발생하였습니다.';
-      return res.status(error.status || 500).send(result);
+      handleServerError(error, res, 500, "로그인 중 에러가 발생하였습니다.");
    }
 });
 // 로그아웃
@@ -44,8 +43,9 @@ router.post("/logout", (req, res) => {
       delete req.session.user;
       res.status(200).send(result);
    } catch (error) {
-      console.error(error);
-      return res.status(500).send(createResult("로그아웃 중 에러가 발생하였습니다."));
+      handleServerError(error, res, 500, "로그아웃 중 에러가 발생하였습니다.");
+   } finally {
+      if (postgresPool) postgresPool.end();
    }
 });
 // 회원가입
@@ -78,9 +78,7 @@ router.post("/signup", async (req, res) => {
 
       return res.status(201).send(result);
    } catch (error) {
-      console.error(error);
-      result.message = error.message || '회원가입 중 에러가 발생하였습니다.';
-      res.status(error.status || 500).send(result);
+      handleServerError(error, res, 500, "회원가입 중 에러가 발생하였습니다.");
    }
 });
 // 아이디 찾기
@@ -106,9 +104,7 @@ router.get("/find-id", async (req, res) => {
       result.data = { foundId };
       return res.status(200).send(result);
    } catch (error) {
-      console.error(error);
-      result.message = error.message || '아이디 찾기 중 에러가 발생하였습니다.';
-      return res.status(error.status || 500).send(result);
+      handleServerError(error, res, 500, "아이디 찾기 중 에러가 발생하였습니다.");
    }
 });
 //비밀번호 찾기
@@ -133,9 +129,7 @@ router.get("/find-pw", async (req, res) => {
       result.data = { foundPassword };
       return res.status(200).send(result);
    } catch (error) {
-      console.error(error);
-      result.message = error.message || "비밀번호 찾기 중 에러가 발생하였습니다.";
-      return res.status(error.status || 500).send(result);
+      handleServerError(error, res, 500, "비밀번호 찾기 중 에러가 발생하였습니다.");
    }
 });
 
@@ -155,8 +149,7 @@ router.get("/", loginCheck, (req, res) => {
       };
       res.status(200).send(result);
    } catch (error) {
-      console.error(error);
-      return res.status(500).send(createResult("내 정보 보기 중 에러가 발생하였습니다."));
+      handleServerError(error, res, 500, "내 정보 보기 중 에러가 발생하였습니다.");
    }
 });
 // 내 정보 수정
@@ -185,9 +178,7 @@ router.put("/", loginCheck, async (req, res) => {
 
       return res.status(200).send(result);
    } catch (error) {
-      console.error(error);
-      result.message = error.message || "내 정보 수정 중 에러가 발생하였습니다.";
-      return res.status(error.status || 500).send(result);
+      handleServerError(error, res, 500, "내 정보 수정 중 에러가 발생하였습니다.");
    }
 });
 // 회원 탈퇴
@@ -202,9 +193,7 @@ router.delete("/", loginCheck, async (req, res) => {
       await postgresPool.query(deleteSql, [idx]);
       return res.status(200).send(result);
    } catch (error) {
-      console.error(error);
-      result.message = error.message || "회원 탈퇴 중 에러가 발생하였습니다.";
-      return res.status(error.status || 500).send(result);
+      handleServerError(error, res, 500, "회원 탈퇴 중 에러가 발생하였습니다.");
    }
 });
 

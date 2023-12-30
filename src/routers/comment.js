@@ -3,6 +3,7 @@ const postgresPool = require("../modules/connection");
 const loginCheck = require("../middleware/loginCheck")
 const createResult = require("../modules/result")
 const validation = require("../modules/validation")
+const handleServerError = require('../modules/errorHandler');
 //=========댓글=============
 
 //postIdx body로 받아오기
@@ -27,9 +28,7 @@ router.post("/", loginCheck, async (req, res) => {
       return res.status(200).send(result);
 
    } catch (error) {
-      console.error("댓글 작성 중 에러 발생:", error);
-      result.message = error.message || "댓글 작성 중 에러가 발생하였습니다.";
-      res.status(error.status || 500).send(result);
+      handleServerError(error, res, 500, "댓글 작성 중 에러가 발생하였습니다.");
    }
 });
 
@@ -56,9 +55,7 @@ router.get("/", loginCheck, async (req, res) => {
       result.comments = comments;
       res.status(200).send(result);
    } catch (error) {
-      console.error("댓글 조회 중 에러 발생:", error);
-      result.message = error.message || "댓글 조회 중 에러가 발생하였습니다.";
-      res.status(error.status || 500).send(result);
+      handleServerError(error, res, 500, "댓글 조회 중 에러가 발생하였습니다.");
    }
 });
 
@@ -81,9 +78,7 @@ router.put("/:commentIdx", loginCheck, async (req, res) => {
       return res.status(200).send(result);
 
    } catch (error) {
-      console.error("댓글 수정 중 에러 발생:", error);
-      result.message = error.message || "댓글 수정 중 에러가 발생하였습니다.";
-      res.status(error.status || 500).send(result);
+      handleServerError(error, res, 500, "댓글 수정 중 에러가 발생하였습니다.");
    }
 });
 
@@ -105,9 +100,7 @@ router.delete("/:commentIdx", loginCheck, async (req, res) => {
       return res.status(200).send(result);
 
    } catch (error) {
-      console.error("댓글 삭제 중 에러 발생:", error);
-      result.message = error.message || "댓글 삭제 중 에러가 발생하였습니다.";
-      res.status(error.status || 500).send(result);
+      handleServerError(error, res, 500, "댓글 삭제 중 에러가 발생하였습니다.");
    }
 });
 
