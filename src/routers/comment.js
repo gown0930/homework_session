@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const postgresPool = require("../modules/connection");
+const { queryDatabase } = require("../modules/connection");
 const loginCheck = require("../middleware/loginCheck")
 const createResult = require("../modules/result")
 const validation = require("../modules/validation")
@@ -8,7 +8,7 @@ const handleServerError = require('../modules/errorHandler');
 
 //postIdx body로 받아오기
 
-//댓글 쓰기
+// 댓글 쓰기
 router.post("/", loginCheck, async (req, res) => {
    const result = createResult();
 
@@ -21,10 +21,12 @@ router.post("/", loginCheck, async (req, res) => {
       const addCommentQuery = "INSERT INTO homework.comment (comment, user_idx, post_idx) VALUES ($1, $2, $3) RETURNING *";
 
       // 댓글 작성 쿼리 실행
-      const { rows: addCommentResult } = await postgresPool.query(addCommentQuery, [content, user_idx, post_idx]);
+      const { rows: addCommentResult } = await queryDatabase(addCommentQuery, [content, user_idx, post_idx]);
 
-      if (addCommentResult.length === 0) return res.status(500).send(createResult("댓글 작성 중 에러가 발생하였습니다."));
-
+      if (!addCommentResult || addCommentResult.length === 0) {
+         return res.status(500).send(createResult("댓글 작성 중 에러가 발생하였습니다."));
+      }
+      res.locals.response = result;
       return res.status(200).send(result);
 
    } catch (error) {
@@ -32,7 +34,8 @@ router.post("/", loginCheck, async (req, res) => {
    }
 });
 
-//댓글 보기
+
+// 댓글 보기
 router.get("/", loginCheck, async (req, res) => {
    const result = createResult();
    try {
@@ -50,7 +53,7 @@ router.get("/", loginCheck, async (req, res) => {
     `;
 
       // 댓글 조회 쿼리 실행
-      const { rows: comments } = await postgresPool.query(getCommentsQuery, [post_idx]);
+      const comments = await queryDatabase(getCommentsQuery, [post_idx]);
 
       result.comments = comments;
       res.status(200).send(result);
@@ -59,7 +62,7 @@ router.get("/", loginCheck, async (req, res) => {
    }
 });
 
-//댓글 수정
+// 댓글 수정
 router.put("/:commentIdx", loginCheck, async (req, res) => {
    const commentIdx = req.params.commentIdx;
    const { post_idx, content } = req.body;
@@ -71,7 +74,7 @@ router.put("/:commentIdx", loginCheck, async (req, res) => {
       const updateCommentQuery = "UPDATE homework.comment SET comment = $1, created_at = CURRENT_TIMESTAMP WHERE idx = $2 AND user_idx = $3 AND post_idx = $4";
 
       // 댓글 수정 쿼리 실행
-      const { rowCount } = await postgresPool.query(updateCommentQuery, [content, commentIdx, user.idx, post_idx]);
+      const { rowCount } = await queryDatabase(updateCommentQuery, [content, commentIdx, user.idx, post_idx]);
 
       if (rowCount === 0) return res.status(403).send(createResult("댓글을 수정할 수 있는 권한이 없거나 댓글이 존재하지 않습니다."));
 
@@ -82,7 +85,7 @@ router.put("/:commentIdx", loginCheck, async (req, res) => {
    }
 });
 
-//댓글 삭제
+// 댓글 삭제
 router.delete("/:commentIdx", loginCheck, async (req, res) => {
    const commentIdx = req.params.commentIdx;
    const { post_idx } = req.query;
@@ -93,7 +96,7 @@ router.delete("/:commentIdx", loginCheck, async (req, res) => {
       const deleteCommentQuery = "DELETE FROM homework.comment WHERE idx = $1 AND user_idx = $2 AND post_idx = $3";
 
       // 댓글 삭제 쿼리 실행
-      const { rowCount } = await postgresPool.query(deleteCommentQuery, [commentIdx, user.idx, post_idx]);
+      const { rowCount } = await queryDatabase(deleteCommentQuery, [commentIdx, user.idx, post_idx]);
 
       if (rowCount === 0) throw { status: 500, message: "댓글 삭제에 실패하였습니다. 권한이 없거나 댓글을 찾을 수 없습니다." };
 
@@ -103,6 +106,7 @@ router.delete("/:commentIdx", loginCheck, async (req, res) => {
       handleServerError(error, res, 500, "댓글 삭제 중 에러가 발생하였습니다.");
    }
 });
+
 
 
 module.exports = router

@@ -1,7 +1,6 @@
-require('dotenv').config();
 const { Pool } = require("pg");
+require('dotenv').config();
 
-// 필수 환경 변수 체크 및 PostgreSQL 연결 정보 설정
 const requiredEnvVars = ["DB_USER", "DB_PASSWORD", "DB_HOST", "DB_NAME", "DB_PORT"];
 for (const envVar of requiredEnvVars) {
    if (!process.env[envVar]) {
@@ -9,25 +8,37 @@ for (const envVar of requiredEnvVars) {
    }
 }
 
-const postgresConnection = {
-   user: process.env.DB_USER,
-   password: process.env.DB_PASSWORD,
-   host: process.env.DB_HOST,
-   database: process.env.DB_NAME,
-   port: process.env.DB_PORT,
+const postgresConnection = async () => {
+   const pool = new Pool({
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      port: process.env.DB_PORT,
+   });
+
+   return pool;
 };
 
-const postgresPool = new Pool(postgresConnection);
-
-(async () => {
+async function queryDatabase(query, values) {
+   let client;
    try {
-      const client = await postgresPool.connect();
-      console.log("PostgreSQL 연결");
-      client.release();
-   } catch (err) {
-      console.error("PostgreSQL 연결 에러:", err);
+      const pool = await postgresConnection();
+      client = await pool.connect();
+      const result = await client.query(query, values);
+      console.log("PostgreSQL 연결 성공!");
+      return result.rows;
+   } catch (error) {
+      console.error("Error in queryDatabase:", error.message);
+      throw error; // 에러 다시 던지기
+   } finally {
+      if (client) {
+         client.release(); // 클라이언트 해제
+         console.log("PostgreSQL 클라이언트 반환!");
+      }
    }
-})();
+}
 
-module.exports = postgresPool;
+module.exports = { queryDatabase };
+
 

@@ -11,15 +11,15 @@ const loginCheck = (req, res, next) => {
    next();
 }
 
-const logoutCheck = (req, res, next) => {
-   const user = req.session.user;
-   if (user) {
-      result.message = '이미 로그인되어 있습니다.';
-      return res.status(401).send(result);
-   }
-   req.user = user;
-   next();
-}
+// const logoutCheck = (req, res, next) => {
+//    const user = req.session.user;
+//    if (user) {
+//       result.message = '이미 로그인되어 있습니다.';
+//       return res.status(401).send(result);
+//    }
+//    req.user = user;
+//    next();
+// }
 
 module.exports = loginCheck
 
