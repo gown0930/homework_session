@@ -2,14 +2,14 @@ const router = require("express").Router();
 const { queryDatabase } = require("../modules/connection");
 const loginCheck = require("../middleware/loginCheck")
 const createResult = require("../modules/result")
-const validation = require("../modules/validation")
+const createValidationMiddleware = require('../middleware/validate');
 
 //=========댓글=============
 
 //postIdx body로 받아오기
 
 // 댓글 쓰기
-router.post("/", loginCheck, async (req, res) => {
+router.post("/", loginCheck, createValidationMiddleware(['content']), async (req, res) => {
    const result = createResult();
 
    try {
@@ -33,7 +33,6 @@ router.post("/", loginCheck, async (req, res) => {
       next(error);
    }
 });
-
 
 // 댓글 보기
 router.get("/", loginCheck, async (req, res) => {
@@ -64,7 +63,7 @@ router.get("/", loginCheck, async (req, res) => {
 });
 
 // 댓글 수정
-router.put("/:commentIdx", loginCheck, async (req, res) => {
+router.put("/:commentIdx", loginCheck, createValidationMiddleware(['content']), async (req, res) => {
    const commentIdx = req.params.commentIdx;
    const { post_idx, content } = req.body;
    const result = createResult();

@@ -1,21 +1,17 @@
 const router = require("express").Router()
 const { queryDatabase } = require("../modules/connection");
-const validation = require("../modules/validation");
 const createResult = require("../modules/result");
 const loginCheck = require("../middleware/loginCheck");
 const logoutCheck = require("../middleware/logoutcheck");
-
+const createValidationMiddleware = require('../middleware/validate');
 
 //===========로그인 & 회원가입 ===============
 // 로그인
-router.post('/login', logoutCheck, async (req, res, next) => {
+router.post('/login', logoutCheck, createValidationMiddleware(['id', 'pw']), async (req, res, next) => {
    const { id, pw } = req.body;
    const result = createResult();
 
    try {
-      validation.validateId(id);
-      validation.validatePassword(pw);
-
       // 로그인 처리
       const sql = `SELECT * FROM homework.user WHERE id = $1 AND password = $2`;
       const rows = await queryDatabase(sql, [id, pw]);
@@ -39,7 +35,6 @@ router.post('/login', logoutCheck, async (req, res, next) => {
       next(error);
    }
 });
-
 // 로그아웃
 router.post("/logout", (req, res) => {
    const result = createResult();
@@ -52,16 +47,11 @@ router.post("/logout", (req, res) => {
    }
 });
 // 회원가입
-router.post("/signup", logoutCheck, async (req, res) => {
-   const { id, pw, name, phone_num, email } = req.body;
+router.post("/signup", logoutCheck, createValidationMiddleware(['id', 'pw', 'name', 'phone_num', 'email']), async (req, res) => {
+   const { id, pw, pw_same, name, phone_num, email } = req.body;
    const result = createResult();
 
    try {
-      validation.validateId(id);
-      validation.validatePassword(pw);
-      validation.validatePhoneNumber(phone_num);
-      validation.validateEmail(email);
-      validation.validateName(name);
 
       if (req.session.user) return res.status(200).send(createResult('이미 로그인되어 있습니다.'));
 
@@ -88,14 +78,11 @@ router.post("/signup", logoutCheck, async (req, res) => {
 });
 
 // 아이디 찾기
-router.get("/find-id", logoutCheck, async (req, res) => {
+router.get("/find-id", logoutCheck, createValidationMiddleware(['name', 'phone_num', 'email']), async (req, res) => {
    const { name, phone_num, email } = req.query;
    const result = createResult();
 
    try {
-      validation.validateName(name);
-      validation.validatePhoneNumber(phone_num);
-      validation.validateEmail(email);
 
       // db 처리로 id 가져오기
       const findIdSql = "SELECT id FROM homework.user WHERE name = $1 AND phone_num = $2 AND email = $3";
@@ -116,15 +103,11 @@ router.get("/find-id", logoutCheck, async (req, res) => {
 });
 
 // 비밀번호 찾기
-router.get("/find-pw", logoutCheck, async (req, res) => {
+router.get("/find-pw", logoutCheck, createValidationMiddleware(['id', 'name', 'phone_num', 'email']), async (req, res) => {
    const { id, name, phone_num, email } = req.query;
    const result = createResult();
 
    try {
-      validation.validateId(id);
-      validation.validatePhoneNumber(phone_num);
-      validation.validateEmail(email);
-      validation.validateName(name);
 
       // 비밀번호를 가져오기 위한 쿼리
       const getPasswordSql = "SELECT password FROM homework.user WHERE id = $1 AND name = $2 AND phone_num = $3 AND email = $4";

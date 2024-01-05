@@ -3,21 +3,19 @@ const router = express.Router();
 const { queryDatabase } = require("../modules/connection");
 const loginCheck = require("../middleware/loginCheck")
 const createResult = require("../modules/result")
-const validation = require("../modules/validation")
+const createValidationMiddleware = require('../middleware/validate');
 
 //=========게시글==========
 
 // 게시글 쓰기
-router.post("/", loginCheck, async (req, res) => {
+router.post("/", loginCheck, createValidationMiddleware(['title', 'content']), async (req, res) => {
    const result = createResult();
-
+   const user = req.user;
+   const { title, content } = req.body;
+   const user_idx = user.idx;
    try {
-      const user = req.user;
-      const { title, content } = req.body;
-      const user_idx = user.idx;
 
-      validation.validateContent(title);
-      validation.validateContent(content);
+
 
       const saveSql = "INSERT INTO homework.post (title, content, user_idx) VALUES ($1, $2, $3)";
 
@@ -52,25 +50,6 @@ router.get("/", loginCheck, async (req, res) => {
       next(error);
    }
 });
-//전체 게시물 읽기
-router.get("/", async (req, res, next) => {
-   const result = {
-      "message": "",
-      "data": null
-   }
-   try {
-      const sql = `SELECT posting.*, account.id AS postingUser 
-        FROM posting 
-        JOIN account ON posting.account_key = account.account_key 
-        ORDER BY posting.create_at DESC`
-      const queryData = await queryModule(sql)
-      result.data = queryData;
-      res.locals.response = result;
-      res.status(200).send(result)
-   } catch (error) {
-      next(error)
-   }
-})
 
 // 게시글 자세히 보기
 router.get("/:idx", loginCheck, async (req, res) => {
@@ -89,7 +68,7 @@ router.get("/:idx", loginCheck, async (req, res) => {
 });
 
 // 게시글 수정하기
-router.put("/:idx", loginCheck, async (req, res) => {
+router.put("/:idx", loginCheck, createValidationMiddleware(['title', 'content']), async (req, res) => {
    const result = createResult();
    try {
       const user = req.user;

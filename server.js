@@ -65,11 +65,10 @@ app.use(async (req, res, next) => {
             console.log("업로드 성공");
          } catch (e) {
             console.error("MongoDB 연결 오류:", e.message);
-         } finally {
-            if (conn) conn.close()
          }
       } catch (error) {
          console.error("오류 발생:", error.message);
+         console.log(error)
       }
    });
    next();
