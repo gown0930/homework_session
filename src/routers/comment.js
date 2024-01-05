@@ -3,7 +3,7 @@ const { queryDatabase } = require("../modules/connection");
 const loginCheck = require("../middleware/loginCheck")
 const createResult = require("../modules/result")
 const validation = require("../modules/validation")
-const handleServerError = require('../modules/errorHandler');
+
 //=========댓글=============
 
 //postIdx body로 받아오기
@@ -30,7 +30,7 @@ router.post("/", loginCheck, async (req, res) => {
       return res.status(200).send(result);
 
    } catch (error) {
-      handleServerError(error, res, 500, "댓글 작성 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
@@ -56,9 +56,10 @@ router.get("/", loginCheck, async (req, res) => {
       const comments = await queryDatabase(getCommentsQuery, [post_idx]);
 
       result.comments = comments;
+      res.locals.response = result;
       res.status(200).send(result);
    } catch (error) {
-      handleServerError(error, res, 500, "댓글 조회 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
@@ -77,11 +78,11 @@ router.put("/:commentIdx", loginCheck, async (req, res) => {
       const { rowCount } = await queryDatabase(updateCommentQuery, [content, commentIdx, user.idx, post_idx]);
 
       if (rowCount === 0) return res.status(403).send(createResult("댓글을 수정할 수 있는 권한이 없거나 댓글이 존재하지 않습니다."));
-
+      res.locals.response = result;
       return res.status(200).send(result);
 
    } catch (error) {
-      handleServerError(error, res, 500, "댓글 수정 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
@@ -99,11 +100,11 @@ router.delete("/:commentIdx", loginCheck, async (req, res) => {
       const { rowCount } = await queryDatabase(deleteCommentQuery, [commentIdx, user.idx, post_idx]);
 
       if (rowCount === 0) throw { status: 500, message: "댓글 삭제에 실패하였습니다. 권한이 없거나 댓글을 찾을 수 없습니다." };
-
+      res.locals.response = result;
       return res.status(200).send(result);
 
    } catch (error) {
-      handleServerError(error, res, 500, "댓글 삭제 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 

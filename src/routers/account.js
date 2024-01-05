@@ -3,20 +3,18 @@ const { queryDatabase } = require("../modules/connection");
 const validation = require("../modules/validation");
 const createResult = require("../modules/result");
 const loginCheck = require("../middleware/loginCheck");
-const handleServerError = require('../modules/errorHandler');
+const logoutCheck = require("../middleware/logoutcheck");
 
 
 //===========로그인 & 회원가입 ===============
 // 로그인
-router.post('/login', async (req, res) => {
+router.post('/login', logoutCheck, async (req, res, next) => {
    const { id, pw } = req.body;
    const result = createResult();
 
    try {
       validation.validateId(id);
       validation.validatePassword(pw);
-
-      if (req.session.user) return res.status(200).send(createResult('이미 로그인되어 있습니다.'));
 
       // 로그인 처리
       const sql = `SELECT * FROM homework.user WHERE id = $1 AND password = $2`;
@@ -38,7 +36,7 @@ router.post('/login', async (req, res) => {
       res.locals.response = result;
       res.status(200).send(result);
    } catch (error) {
-      handleServerError(error, res, 500, "로그인 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
@@ -50,11 +48,11 @@ router.post("/logout", (req, res) => {
       delete req.session.user;
       res.status(200).send(result);
    } catch (error) {
-      handleServerError(error, res, 500, "로그아웃 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 // 회원가입
-router.post("/signup", async (req, res) => {
+router.post("/signup", logoutCheck, async (req, res) => {
    const { id, pw, name, phone_num, email } = req.body;
    const result = createResult();
 
@@ -85,12 +83,12 @@ router.post("/signup", async (req, res) => {
       res.locals.response = result;
       return res.status(200).send(result);
    } catch (error) {
-      handleServerError(error, res, 500, "회원가입 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
 // 아이디 찾기
-router.get("/find-id", async (req, res) => {
+router.get("/find-id", logoutCheck, async (req, res) => {
    const { name, phone_num, email } = req.query;
    const result = createResult();
 
@@ -113,12 +111,12 @@ router.get("/find-id", async (req, res) => {
       res.locals.response = result;
       return res.status(200).send(result);
    } catch (error) {
-      handleServerError(error, res, 500, "아이디 찾기 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
 // 비밀번호 찾기
-router.get("/find-pw", async (req, res) => {
+router.get("/find-pw", logoutCheck, async (req, res) => {
    const { id, name, phone_num, email } = req.query;
    const result = createResult();
 
@@ -140,7 +138,7 @@ router.get("/find-pw", async (req, res) => {
       res.locals.response = result;
       return res.status(200).send(result);
    } catch (error) {
-      handleServerError(error, res, 500, "비밀번호 찾기 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
@@ -162,7 +160,7 @@ router.get("/", loginCheck, async (req, res) => {
       res.locals.response = result;
       res.status(200).json(result); // res.json()으로 변경
    } catch (error) {
-      handleServerError(error, res, 500, "내 정보 보기 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
@@ -192,7 +190,7 @@ router.put("/", loginCheck, async (req, res) => {
       res.locals.response = result;
       return res.status(200).json(result); // res.json()으로 변경
    } catch (error) {
-      handleServerError(error, res, 500, "내 정보 수정 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
@@ -209,7 +207,7 @@ router.delete("/", loginCheck, async (req, res) => {
       res.locals.response = result;
       return res.status(200).json(result); // res.json()으로 변경
    } catch (error) {
-      handleServerError(error, res, 500, "회원 탈퇴 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 

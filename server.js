@@ -2,6 +2,7 @@ const express = require("express");
 const session = require("express-session");
 //const connectMongoDB = require("./src/modules/mongodb");
 const MongoClient = require("mongodb").MongoClient;
+const createResult = require("./src/modules/result");
 
 const accountApi = require("./src/routers/account");
 const postApi = require("./src/routers/post");
@@ -52,8 +53,8 @@ app.use(async (req, res, next) => {
             requestBody,
             userAgent,
             protocolVersion,
-            response: res.locals.response,
-            timestamp: new Date().toISOString(),
+            response: res.locals.response,//보낸값
+            timestamp: new Date().toISOString(),//시간
          };
          console.log(requestInfo)
 
@@ -62,9 +63,10 @@ app.use(async (req, res, next) => {
             const conn = await MongoClient.connect("mongodb://localhost:27017");
             await conn.db("homework").collection("log").insertOne(requestInfo);
             console.log("업로드 성공");
-            conn.close();
          } catch (e) {
             console.error("MongoDB 연결 오류:", e.message);
+         } finally {
+            if (conn) conn.close()
          }
       } catch (error) {
          console.error("오류 발생:", error.message);
@@ -77,6 +79,14 @@ app.use("/account", accountApi);
 app.use("/post", postApi);
 app.use("/comment", commentApi);
 app.use("/logList", logListApi);
+
+// error handler
+app.use((err, req, res, next) => {
+   console.error(err.stack);
+
+   // 에러 응답
+   res.status(err.status || 500).send(createResult(err.message || '에러가 발생했습니다.'));
+});
 
 // 웹 서버 실행
 app.listen(port, () => {

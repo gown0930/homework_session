@@ -30,7 +30,7 @@ async function queryDatabase(query, values) {
       return result.rows;
    } catch (error) {
       console.error("Error in queryDatabase:", error.message);
-      throw error; // 에러 다시 던지기
+      throw error;
    } finally {
       if (client) {
          client.release(); // 클라이언트 해제

@@ -4,7 +4,7 @@ const { queryDatabase } = require("../modules/connection");
 const loginCheck = require("../middleware/loginCheck")
 const createResult = require("../modules/result")
 const validation = require("../modules/validation")
-const handleServerError = require('../modules/errorHandler');
+
 //=========게시글==========
 
 // 게시글 쓰기
@@ -26,7 +26,7 @@ router.post("/", loginCheck, async (req, res) => {
       res.locals.response = result;
       return res.status(200).send(result);
    } catch (error) {
-      handleServerError(error, res, 500, "게시글 작성 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
@@ -49,7 +49,7 @@ router.get("/", loginCheck, async (req, res) => {
       res.locals.response = result;
       res.status(200).send(result);
    } catch (error) {
-      handleServerError(error, res, 500, "게시글 목록 조회 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 //전체 게시물 읽기
@@ -85,9 +85,7 @@ router.get("/:idx", loginCheck, async (req, res) => {
       result.posts = posts;
       res.locals.response = result;
       res.status(200).send(result);
-   } catch (error) {
-      handleServerError(error, res, 500, "게시글 조회 중 에러가 발생하였습니다.");
-   }
+   } catch (error) { next(error); }
 });
 
 // 게시글 수정하기
@@ -112,7 +110,7 @@ router.put("/:idx", loginCheck, async (req, res) => {
       return res.status(200).send(result);
 
    } catch (error) {
-      handleServerError(error, res, 500, "게시글 수정 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
@@ -132,7 +130,7 @@ router.delete("/:idx", loginCheck, async (req, res) => {
       return res.status(200).send(result);
 
    } catch (error) {
-      handleServerError(error, res, 500, "게시글 삭제 중 에러가 발생하였습니다.");
+      next(error);
    }
 });
 
