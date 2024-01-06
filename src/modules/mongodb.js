@@ -1,20 +1,16 @@
+// mongoConnection.js
+const { MongoClient } = require('mongodb');
 
-const MongoClient = require("mongodb").MongoClient;
-
-const uri = "mongodb://localhost:27017";
-const dbName = "homework";
-
-async function connectMongoDB() {
-   const client = new MongoClient(uri);
+const connectToMongo = async () => {
    try {
-      await client.connect();
-      console.log("MongoDB에 연결되었습니다.");
-      return client.db(dbName);
-   } catch (error) {
-      console.error("MongoDB 연결 오류:", error.message);
-      throw error;
+      const conn = await MongoClient.connect("mongodb://localhost:27017");
+      return conn;
+   } catch (e) {
+      console.error("MongoDB 연결 오류:", e.message);
+      throw e;
    }
-}
+};
 
-module.exports = connectMongoDB;
+module.exports = connectToMongo;
+
 

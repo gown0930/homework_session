@@ -41,15 +41,21 @@ router.get("/", loginCheck, async (req, res) => {
       const { post_idx } = req.query;
 
       const getCommentsQuery = `
-      SELECT 
-        idx, 
-        comment, 
-        user_idx, 
-        TO_CHAR(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD HH:MI AM') AS created_at
-      FROM homework.comment 
-      WHERE post_idx = $1 
-      ORDER BY idx DESC
-    `;
+         SELECT 
+            c.idx, 
+            c.comment, 
+            c.user_idx, 
+            TO_CHAR(c.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD HH:MI AM') AS created_at,
+            u.id as user_id
+         FROM 
+            homework.comment c
+         JOIN 
+            homework.user u ON c.user_idx = u.idx
+         WHERE 
+            c.post_idx = $1 
+         ORDER BY 
+            c.idx DESC
+      `;
 
       // 댓글 조회 쿼리 실행
       const comments = await queryDatabase(getCommentsQuery, [post_idx]);
@@ -61,6 +67,7 @@ router.get("/", loginCheck, async (req, res) => {
       next(error);
    }
 });
+
 
 // 댓글 수정
 router.put("/:commentIdx", loginCheck, createValidationMiddleware(['content']), async (req, res) => {

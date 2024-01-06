@@ -33,14 +33,21 @@ router.get("/", loginCheck, async (req, res) => {
    const result = createResult();
    try {
       const user = req.user;
+
       const getAllPostsQuery = `
          SELECT 
-            idx, 
-            title, 
-            TO_CHAR(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD HH:MI AM') AS created_at 
-         FROM homework.post 
-         ORDER BY idx DESC
+            p.idx, 
+            p.title, 
+            TO_CHAR(p.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD HH:MI AM') AS created_at,
+            u.id as user_id
+         FROM 
+            homework.post p
+         JOIN 
+            homework.user u ON p.user_idx = u.idx
+         ORDER BY 
+            p.idx DESC
       `;
+
       const posts = await queryDatabase(getAllPostsQuery);
       result.posts = posts;
       console.log(posts);
@@ -51,20 +58,36 @@ router.get("/", loginCheck, async (req, res) => {
    }
 });
 
+
 // 게시글 자세히 보기
 router.get("/:idx", loginCheck, async (req, res) => {
    const result = createResult();
    try {
       const user = req.user;
       const postIdx = req.params.idx;
-      const getPostQuery = "SELECT title, content, TO_CHAR(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD HH:MI AM') AS created_at FROM homework.post WHERE idx = $1";
+
+      const getPostQuery = `
+         SELECT 
+            p.title, 
+            p.content, 
+            TO_CHAR(p.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD HH:MI AM') AS created_at,
+            u.id as user_id
+         FROM 
+            homework.post p
+         JOIN 
+            homework.user u ON p.user_idx = u.idx
+         WHERE 
+            p.idx = $1
+      `;
 
       const posts = await queryDatabase(getPostQuery, [postIdx]);
 
       result.posts = posts;
       res.locals.response = result;
       res.status(200).send(result);
-   } catch (error) { next(error); }
+   } catch (error) {
+      next(error);
+   }
 });
 
 // 게시글 수정하기

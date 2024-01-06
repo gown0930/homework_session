@@ -4,6 +4,10 @@ const createResult = require("../modules/result");
 const loginCheck = require("../middleware/loginCheck");
 const logoutCheck = require("../middleware/logoutcheck");
 const createValidationMiddleware = require('../middleware/validate');
+const checkIdDuplicate = require('../middleware/checkIdDuplicate');
+const checkPhoneDuplicate = require('../middleware/checkPhoneDuplicate');
+const checkPasswordMatch = require('../middleware/checkPasswordMatch');
+
 
 //===========로그인 & 회원가입 ===============
 // 로그인
@@ -18,6 +22,7 @@ router.post('/login', logoutCheck, createValidationMiddleware(['id', 'pw']), asy
 
       if (!rows || rows.length === 0) {
          return res.status(401).send(createResult('아이디 또는 비밀번호가 일치하지 않습니다.'));
+         //401 : 클라이언트가 인증되지 않았거나, 인증 정보가 부족하거나 잘못되었을 때 
       }
 
       const login = rows[0];
@@ -47,35 +52,26 @@ router.post("/logout", (req, res) => {
    }
 });
 // 회원가입
-router.post("/signup", logoutCheck, createValidationMiddleware(['id', 'pw', 'name', 'phone_num', 'email']), async (req, res) => {
-   const { id, pw, pw_same, name, phone_num, email } = req.body;
-   const result = createResult();
+router.post("/signup",
+   logoutCheck,
+   createValidationMiddleware(['id', 'pw', 'name', 'phone_num', 'email']),
+   checkIdDuplicate,
+   checkPhoneDuplicate,
+   checkPasswordMatch,
+   async (req, res) => {
+      const { id, pw, name, phone_num, email, isadmin } = req.body;
+      const result = createResult();
 
-   try {
-
-      if (req.session.user) return res.status(200).send(createResult('이미 로그인되어 있습니다.'));
-
-      // 아이디 중복 확인
-      const checkIdSql = "SELECT * FROM homework.user WHERE id = $1";
-      const idResults = await queryDatabase(checkIdSql, [id]);
-
-      if (idResults.length > 0) return res.status(409).send(createResult('아이디가 이미 존재합니다.'));
-
-      // 전화번호 중복 확인
-      const checkPhoneSql = "SELECT * FROM homework.user WHERE phone_num = $1";
-      const phoneResults = await queryDatabase(checkPhoneSql, [phone_num]);
-
-      if (phoneResults.length > 0) return res.status(409).send(createResult('전화번호가 이미 존재합니다.'));
-
-      // 회원가입 처리
-      const insertUserSql = "INSERT INTO homework.user (id, password, name, phone_num, email) VALUES ($1, $2, $3, $4, $5)";
-      await queryDatabase(insertUserSql, [id, pw, name, phone_num, email]);
-      res.locals.response = result;
-      return res.status(200).send(result);
-   } catch (error) {
-      next(error);
-   }
-});
+      try {
+         // 회원가입 처리
+         const insertUserSql = "INSERT INTO homework.user (id, password, name, phone_num, email, isadmin) VALUES ($1, $2, $3, $4, $5, $6)";
+         await queryDatabase(insertUserSql, [id, pw, name, phone_num, email, isadmin]);
+         res.locals.response = result;
+         return res.status(200).send(result);
+      } catch (error) {
+         next(error);
+      }
+   });
 
 // 아이디 찾기
 router.get("/find-id", logoutCheck, createValidationMiddleware(['name', 'phone_num', 'email']), async (req, res) => {
@@ -89,7 +85,7 @@ router.get("/find-id", logoutCheck, createValidationMiddleware(['name', 'phone_n
       const results = await queryDatabase(findIdSql, [name, phone_num, email]);
 
       if (results.length === 0) {
-         return res.status(404).send(createResult('일치하는 사용자가 없습니다.'));
+         return res.status(200).send(createResult('일치하는 사용자가 없습니다.'));
       }
 
       // 결과에서 아이디 추출
@@ -113,7 +109,7 @@ router.get("/find-pw", logoutCheck, createValidationMiddleware(['id', 'name', 'p
       const getPasswordSql = "SELECT password FROM homework.user WHERE id = $1 AND name = $2 AND phone_num = $3 AND email = $4";
       const results = await queryDatabase(getPasswordSql, [id, name, phone_num, email]);
 
-      if (results.length === 0) return res.status(404).send(createResult('일치하는 사용자가 없습니다.'));
+      if (results.length === 0) return res.status(200).send(createResult('일치하는 사용자가 없습니다.'));
 
       // 결과에서 비밀번호 추출
       const foundPassword = results[0].password;
@@ -141,14 +137,14 @@ router.get("/", loginCheck, async (req, res) => {
          email,
       };
       res.locals.response = result;
-      res.status(200).json(result); // res.json()으로 변경
+      res.status(200).send(result);
    } catch (error) {
       next(error);
    }
 });
 
 // 내 정보 수정
-router.put("/", loginCheck, async (req, res) => {
+router.put("/", loginCheck, checkPhoneDuplicate, async (req, res) => {
    const result = createResult();
 
    try {
@@ -161,17 +157,11 @@ router.put("/", loginCheck, async (req, res) => {
       validation.validateEmail(email);
       validation.validateName(name);
 
-      // 전화번호 중복 확인
-      const checkPhoneSql = "SELECT * FROM homework.user WHERE phone_num = $1 AND idx <> $2";
-      const phoneResults = await queryDatabase(checkPhoneSql, [phone_num, idx]);
-
-      if (phoneResults.rowCount > 0) return res.status(409).json(createResult('전화번호가 이미 존재합니다.'));
-
       // DB 통신 - 사용자 정보 수정
       const updateUserSql = "UPDATE homework.user SET password = $1, phone_num = $2, email = $3, name = $4 WHERE idx = $5";
       await queryDatabase(updateUserSql, [pw, phone_num, email, name, idx]);
       res.locals.response = result;
-      return res.status(200).json(result); // res.json()으로 변경
+      return res.status(200).send(result);
    } catch (error) {
       next(error);
    }
@@ -188,7 +178,7 @@ router.delete("/", loginCheck, async (req, res) => {
       const deleteSql = "DELETE FROM homework.user WHERE idx = $1";
       await queryDatabase(deleteSql, [idx]);
       res.locals.response = result;
-      return res.status(200).json(result); // res.json()으로 변경
+      return res.status(200).send(result);
    } catch (error) {
       next(error);
    }
