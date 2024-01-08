@@ -14,6 +14,8 @@ const createValidationMiddleware = (fields) => {
 
       fields.forEach((field) => {
          const pattern = validationPatterns[field];
+         //API에 종속되어있지 않게끔.. 독립적이게 바꿔보기
+         //ex ) key가 바뀌면 여기 내용도 바꿔줘야함 pw->password
          const bodyValue = req.body && req.body[field];
          const queryValue = req.query && req.query[field];
          const paramsValue = req.params && req.params[field];

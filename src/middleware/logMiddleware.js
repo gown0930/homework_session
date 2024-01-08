@@ -17,10 +17,7 @@ const logMiddleware = async (req, res, next) => {
          const query = req.query;
          // 요청 바디
          const requestBody = req.body;
-         // User Agent 정보
-         const userAgent = req.get('user-agent');
-         // 프로토콜 버전
-         const protocolVersion = req.protocolVersion;
+
 
          // 정보를 객체로 담기
          const requestInfo = {
@@ -31,10 +28,8 @@ const logMiddleware = async (req, res, next) => {
             path,
             query,
             requestBody,
-            userAgent,
-            protocolVersion,
             response: res.locals.response, // 보낸값
-            timestamp: new Date().toISOString(), // 시간
+            timestamp: new Date() // 시간
          };
          console.log(requestInfo);
 

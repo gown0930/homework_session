@@ -23,10 +23,10 @@ router.get("/", checkPermission, async (req, res, next) => {
       if (startTime || endTime) {
          query.timestamp = {};
          if (startTime) {
-            query.timestamp.$gte = new Date(startTime).toISOString();
+            query.timestamp.$gte = new Date(startTime);
          }
          if (endTime) {
-            query.timestamp.$lt = new Date(endTime).toISOString();
+            query.timestamp.$lt = new Date(endTime);
          }
       }
       const sortDirection = sortOrder === 'desc' ? -1 : 1;

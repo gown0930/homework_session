@@ -1,5 +1,6 @@
 const express = require("express");
 const session = require("express-session");
+require("dotenv").config()
 const logMiddleware = require('./src/middleware/logMiddleware');
 const createResult = require("./src/modules/result");
 

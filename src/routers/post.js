@@ -58,7 +58,6 @@ router.get("/", loginCheck, async (req, res) => {
    }
 });
 
-
 // 게시글 자세히 보기
 router.get("/:idx", loginCheck, async (req, res) => {
    const result = createResult();

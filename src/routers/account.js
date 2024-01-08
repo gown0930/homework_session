@@ -8,6 +8,8 @@ const checkIdDuplicate = require('../middleware/checkIdDuplicate');
 const checkPhoneDuplicate = require('../middleware/checkPhoneDuplicate');
 const checkPasswordMatch = require('../middleware/checkPasswordMatch');
 
+const checkLogin = require("../middleware/checkLogin")
+const jwt = require("jsonwebtoken")
 
 //===========로그인 & 회원가입 ===============
 // 로그인
@@ -19,6 +21,7 @@ router.post('/login', logoutCheck, createValidationMiddleware(['id', 'pw']), asy
       // 로그인 처리
       const sql = `SELECT * FROM homework.user WHERE id = $1 AND password = $2`;
       const rows = await queryDatabase(sql, [id, pw]);
+
 
       if (!rows || rows.length === 0) {
          return res.status(401).send(createResult('아이디 또는 비밀번호가 일치하지 않습니다.'));
@@ -34,6 +37,21 @@ router.post('/login', logoutCheck, createValidationMiddleware(['id', 'pw']), asy
          email: login.email,
          isAdmin: login.isadmin
       };
+
+      const token = jwt.sign({
+         idx: login.idx,
+         id: login.id,
+         name: login.name,
+         phone_num: login.phone_num,
+         email: login.email,
+         isAdmin: login.isadmin
+
+      }, process.env.SECRET_KEY, {
+         issuer: "haeju",
+         expiresIn: "30m"
+      })
+      result.data.token = token
+
       res.locals.response = result;
       res.status(200).send(result);
    } catch (error) {
@@ -124,7 +142,7 @@ router.get("/find-pw", logoutCheck, createValidationMiddleware(['id', 'name', 'p
 
 //============내 정보================
 // 내 정보 보기
-router.get("/", loginCheck, async (req, res) => {
+router.get("/", loginCheck, checkLogin, async (req, res) => {
    const result = createResult();
    try {
       const user = req.user;
