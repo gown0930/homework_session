@@ -1,9 +1,6 @@
 const createResult = (message = null) => {
    return {
-      message: message,
-      data: {
-         token: ""
-      }
+      message: message
    }
 }
 module.exports = createResult;

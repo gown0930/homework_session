@@ -8,12 +8,9 @@ const checkIdDuplicate = require('../middleware/checkIdDuplicate');
 const checkPhoneDuplicate = require('../middleware/checkPhoneDuplicate');
 const checkPasswordMatch = require('../middleware/checkPasswordMatch');
 
-const checkLogin = require("../middleware/checkLogin")
-const jwt = require("jsonwebtoken")
-
 //===========로그인 & 회원가입 ===============
 // 로그인
-router.post('/login', logoutCheck, createValidationMiddleware(['id', 'pw']), async (req, res, next) => {
+router.post('/login', createValidationMiddleware(['id', 'pw']), async (req, res, next) => {
    const { id, pw } = req.body;
    const result = createResult();
 
@@ -22,12 +19,12 @@ router.post('/login', logoutCheck, createValidationMiddleware(['id', 'pw']), asy
       const sql = `SELECT * FROM homework.user WHERE id = $1 AND password = $2`;
       const rows = await queryDatabase(sql, [id, pw]);
 
-
       if (!rows || rows.length === 0) {
          return res.status(401).send(createResult('아이디 또는 비밀번호가 일치하지 않습니다.'));
-         //401 : 클라이언트가 인증되지 않았거나, 인증 정보가 부족하거나 잘못되었을 때 
+         // 401: 클라이언트가 인증되지 않았거나, 인증 정보가 부족하거나 잘못되었을 때 
       }
 
+      // 새로운 세션 생성
       const login = rows[0];
       req.session.user = {
          idx: login.idx,
@@ -38,19 +35,45 @@ router.post('/login', logoutCheck, createValidationMiddleware(['id', 'pw']), asy
          isAdmin: login.isadmin
       };
 
-      const token = jwt.sign({
-         idx: login.idx,
-         id: login.id,
-         name: login.name,
-         phone_num: login.phone_num,
-         email: login.email,
-         isAdmin: login.isadmin
 
-      }, process.env.SECRET_KEY, {
-         issuer: "haeju",
-         expiresIn: "30m"
-      })
-      result.data.token = token
+      // 현재 세션 스토어에 저장된 모든 세션 가져오기
+      req.sessionStore.all(async (err, sessions) => {
+         if (err) {
+            console.error('Failed to get all sessions:', err);
+            throw err;
+         } else {
+            console.log('All sessions:', sessions);
+
+            for (const [sessionId, session] of Object.entries(sessions)) {
+               console.log("Session ID:", sessionId);
+               console.log("Session Data:", session);
+
+               // 여기에 세션 데이터를 가공하거나 조작하는 코드 추가
+               if (session.user.idx === login.idx && sessionId !== req.sessionID) {
+                  // 이전 세션의 내용을 수정 또는 삭제 처리
+                  // session.user = {
+                  //    idx: null,
+                  //    id: null,
+                  //    name: null,
+                  //    phone_num: null,
+                  //    email: null,
+                  //    isAdmin: null
+                  // };
+
+                  // // 세션을 다시 저장
+                  // // await req.sessionStore.set(sessionId, session);
+
+                  // // console.log("이전 세션의 내용이 수정되었습니다.");
+                  // // 또는 세션을 삭제하려면 아래 주석을 해제
+                  await req.sessionStore.destroy(sessionId);
+                  console.log("이전 세션이 삭제되었습니다.");
+               }
+            }
+         }
+      });
+
+
+
 
       res.locals.response = result;
       res.status(200).send(result);
@@ -58,6 +81,11 @@ router.post('/login', logoutCheck, createValidationMiddleware(['id', 'pw']), asy
       next(error);
    }
 });
+
+
+
+
+
 // 로그아웃
 router.post("/logout", (req, res) => {
    const result = createResult();
@@ -142,7 +170,7 @@ router.get("/find-pw", logoutCheck, createValidationMiddleware(['id', 'name', 'p
 
 //============내 정보================
 // 내 정보 보기
-router.get("/", loginCheck, checkLogin, async (req, res) => {
+router.get("/", loginCheck, async (req, res) => {
    const result = createResult();
    try {
       const user = req.user;
